@@ -159,7 +159,7 @@ class IResourceIdentifer(IMetadataProvider):
     )
 
 
-class IResource(IResourceIdentifer, IMetadataProvider):
+class IResource(IResourceIdentifer, ILinksProvider, IMetadataProvider):
 
     def attributes() -> IFieldMapping:
         """Return mapping of attribute names to values."""
@@ -249,13 +249,13 @@ class IPagableCollection(ICollection):
         """
 
 
-class IToOneRelationship(IMetadataProvider):
+class IToOneRelationship(ILinksProvider, IMetadataProvider):
 
     def resource() -> typing.Optional[IResource]:
         """Return resource referenced by to-one relationship, or None."""
 
 
-class IToManyRelationship(IMetadataProvider):
+class IToManyRelationship(ILinksProvider, IMetadataProvider):
 
     def collection() -> ICollection:
         """Return collection of resources of to-many relationship.

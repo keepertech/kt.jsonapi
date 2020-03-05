@@ -24,6 +24,7 @@ import kt.jsonapi.serializers
 
 
 CONTENT_TYPE = 'application/vnd.api+json'
+"""Media type associated with JSON:API payloads."""
 
 
 def _field_ref(names):
@@ -69,7 +70,7 @@ def _ismap(ob):
 
 
 class Context(object):
-    """Parsed request object containing JSON:API-specific information.
+    """Request context containing JSON:API-specific information.
 
     Sub-classes or alternatives may be constructed for request objects
     from different web frameworks; this is built for Flask requests.
@@ -90,6 +91,14 @@ class Context(object):
     _type_name = kt.jsonapi.interfaces.TypeName()
 
     def __init__(self, request):
+        """Initialize information needed from the request.
+
+        All information is captured from the request up front, instead
+        of relying on being able to get it later.  Any errors that can
+        be detected while parsing the query string will be raised as
+        early as possible.
+
+        """
         # request information
         self.fields = {}
         self.relpaths = set()
@@ -216,7 +225,14 @@ class Context(object):
     # Methods to construct response:
 
     def collection(self, collection, headers=None):
-        # Return collection as primary data.
+        """Generate response containing a collection as primary data.
+
+        If *headers* is given and non-``None``, it must be be mapping of
+        additional headers that should be returned in the request.  If a
+        **Content-Type** header is provided, it will be used instead of
+        the default value for JSON:API responses.
+
+        """
         collection = kt.jsonapi.interfaces.ICollection(collection)
         self._prepare_collection(collection)
 
@@ -261,8 +277,14 @@ class Context(object):
                 f'{verb} is not supported by collection')
 
     def relationship(self, relationship, headers=None):
-        # Return relationship as primary data.
+        """Generate response containing a relationship as primary data.
 
+        If *headers* is given and non-``None``, it must be be mapping of
+        additional headers that should be returned in the request.  If a
+        **Content-Type** header is provided, it will be used instead of
+        the default value for JSON:API responses.
+
+        """
         if self.fields or self.relpaths:
             raise werkzeug.exceptions.BadRequest(
                 'cannot specify sparse field sets or relationships'
@@ -292,7 +314,14 @@ class Context(object):
         return self._response(body, headers=headers)
 
     def resource(self, resource, headers=None):
-        # Return resource as primary data.
+        """Generate response containing a resource as primary data.
+
+        If *headers* is given and non-``None``, it must be be mapping of
+        additional headers that should be returned in the request.  If a
+        **Content-Type** header is provided, it will be used instead of
+        the default value for JSON:API responses.
+
+        """
         data = kt.jsonapi.serializers.resource(self, resource)
         data = dict(data=data)
         if self.included:
@@ -312,7 +341,8 @@ class Context(object):
 def context():
     """Get JSON:API context for current Flask request.
 
-    A new context will be created if needed.
+    A new context will be created if needed.  At most one context will
+    be associated with each request.
 
     """
     try:

@@ -16,11 +16,18 @@ import kt.jsonapi.interfaces
 
 
 @zope.interface.implementer(kt.jsonapi.interfaces.ILink)
-class Link(object):
+class Link:
+    """Utility object representing a JSON:API link.
+
+    This supports additional metadata fields allowed by JSON:API in
+    addition to the required href value.
+
+    """
 
     def __init__(self, href, **meta):
+        """Initialize link with href and optional metadata."""
         self.href = href
         self._meta = meta
 
     def meta(self):
-        return self._meta
+        return dict(self._meta)
