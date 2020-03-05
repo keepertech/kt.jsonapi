@@ -15,7 +15,6 @@ import typing
 
 import zope.interface
 import zope.interface.common.mapping
-import zope.interface.common.sequence
 import zope.schema
 import zope.schema.interfaces
 
@@ -42,27 +41,26 @@ class InvalidTypeName(_InvalidName):
 class QueryStringException(ValueError):
     """Something is wrong with the format or content of the query string."""
 
-
-class InvalidQueryKey(QueryStringException):
-    """A key in the query string is malformed."""
-
     def __init__(self, message, key):
+        """Initialize with an error message and the key from query string."""
         super(InvalidQueryKey, self).__init__(message)
         self.key = key
 
 
-class InvalidQueryKeyUsage(QueryStringException):
+class InvalidQueryKey(QueryStringException):
+    """A key in the query string is malformed."""
 
-    def __init__(self, message, key):
-        super(InvalidQueryKeyUsage, self).__init__(message)
-        self.key = key
+
+class InvalidQueryKeyUsage(QueryStringException):
+    """A key in the query string is used inconsistently."""
 
 
 class InvalidQueryKeyValue(QueryStringException):
+    """A key in the query string has an unsupported value."""
 
     def __init__(self, message, key, value):
-        super(InvalidQueryKeyValue, self).__init__(message)
-        self.key = key
+        """Initialize with message, key and value from query string."""
+        super(InvalidQueryKeyValue, self).__init__(message, key)
         self.value = value
 
 
@@ -76,11 +74,29 @@ class _Name(zope.schema.TextLine):
 
 
 class MemberName(_Name):
+    """Member name, as defined by JSON:API.
+
+    Allowed member names are `constrained by the specification
+    <https://jsonapi.org/format/#document-member-names>`__.
+    This definition applies to the names of attributes and relationships.
+
+    Raises :exc:`InvalidMemberName` when constraints are not satisfied.
+
+    """
 
     _exception = InvalidMemberName
 
 
 class TypeName(_Name):
+    """Type name, as defined by JSON:API.
+
+    Allowed type names are `constrained by the specification
+    <https://jsonapi.org/format/#document-resource-object-identification>`__
+    in the same way as member names.
+
+    Raises :exc:`InvalidTypeName` when constraints are not satisfied.
+
+    """
 
     _exception = InvalidTypeName
 
@@ -171,9 +187,9 @@ class IResource(IResourceIdentifer, ILinksProvider, IMetadataProvider):
         """Return mapping of relationship names to relationship objects."""
 
 
-class ICollection(IMetadataProvider):
+class ICollection(ILinksProvider, IMetadataProvider):
 
-    def resources(self):
+    def resources():
         """Return sequence of resources of collection.
 
         This method will only be called once, and the return value will
@@ -261,6 +277,7 @@ class IToManyRelationship(ILinksProvider, IMetadataProvider):
         """Return collection of resources of to-many relationship.
 
         The collection may be filterable, sortable, or pagable, as
-        appropriate.
+        appropriate.  Those additional aspects will only be invoked if
+        the relationship is rendered as the primary data in a response.
 
         """

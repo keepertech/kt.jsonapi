@@ -240,7 +240,7 @@ return an article::
         def get(self, aid):
             article = get_article(aid)
 
-            # Get the JSON:API context from the request.
+            # Get the JSON:API context for the request.
             context = kt.jsonapi.api.context()
 
             return context.resource(article)
