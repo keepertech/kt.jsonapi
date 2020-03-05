@@ -32,7 +32,8 @@ version = release or '(development)'
 extensions = [
     'sphinx.ext.autodoc',
     'sphinx.ext.intersphinx',
-    'sphinxcontrib.zopeext.autointerface',
+    'repoze.sphinx.autointerface',
+    # 'sphinxcontrib.zopeext.autointerface',
 ]
 
 

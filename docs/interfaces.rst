@@ -18,11 +18,13 @@ Interfaces
 
 .. autointerface:: IFieldMapping
 .. autointerface:: ILink
-.. autointerface:: ILinksProvider
 .. autointerface:: ICollection
 .. autointerface:: IFilterableCollection
+     :members: set_filter
 .. autointerface:: ISortableCollection
+     :members: set_sort
 .. autointerface:: IPagableCollection
+     :members: set_pagination
 .. autointerface:: IResource
 .. autointerface:: IToOneRelationship
 .. autointerface:: IToManyRelationship

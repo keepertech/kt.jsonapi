@@ -111,10 +111,10 @@ while the other is a reference to another application object
 (``author``).
 
 Generating a JSON:API representation of an ``Article`` requires being
-able to adapt it to the :interface:`~kt.jsonapi.interfaces.IResource`
+able to adapt it to the :class:`~kt.jsonapi.interfaces.IResource`
 interface.  (Interfaces defined by this library are in the
 :mod:`kt.jsonapi.interfaces` module.)  For this, we'll need an
-implementation of :interface:`~kt.jsonapi.interfaces.IResource` that
+implementation of :class:`~kt.jsonapi.interfaces.IResource` that
 takes an instance of :class:`Article` as an argument::
 
     import kt.jsonapi.interfaces
