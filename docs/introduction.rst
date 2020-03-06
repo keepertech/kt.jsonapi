@@ -78,6 +78,23 @@ to *provide* that interface by default.  There is a lot of documentation
 and literature on the ZCA online; we'll demonstrate essential aspects in
 this document, but won't cover the ZCA beyond that.
 
+.. seealso::
+
+    These packages define the `Zope Component Architecture`_:
+
+    |zope.component|_
+        Adapter registration and retrieval support.  When calling an
+        interface to perform adaptation, this is the machinery that's
+        invoked.
+
+    |zope.interface|_
+        Support for interface definitions and support for declaring what
+        classes or factories implement, and manipulation of what objects
+        provide.
+
+    |zope.schema|_
+        More extensive support for typed data attributes.
+
 
 Supporting JSON:API via adaptation
 ----------------------------------
@@ -275,3 +292,15 @@ collection as primary data.
 
 .. _Zope 3:
    https://en.wikipedia.org/wiki/Zope
+
+.. |zope.component| replace:: ``zope.component``
+.. _zope.component:
+   https://zopecomponent.readthedocs.io/en/latest/
+
+.. |zope.interface| replace:: ``zope.interface``
+.. _zope.interface:
+   https://zopeinterface.readthedocs.io/en/latest/
+
+.. |zope.schema| replace:: ``zope.schema``
+.. _zope.schema:
+   https://zopeschema.readthedocs.io/en/latest/
