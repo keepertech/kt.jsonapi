@@ -34,12 +34,19 @@ def link(link):
         return ob.href
 
 
+def _collection_links(ob):
+    links = dict(ob.links())
+    for name, val in list(links.items()):
+        if val is None and name in ('first', 'next', 'last', 'prev'):
+            continue
+        links[name] = link(val)
+    return links
+
+
 def _links(ob):
     links = dict(ob.links())
-    if links:
-        links = {name: link(val)
-                 for name, val in links.items()}
-    return links
+    return {name: link(val)
+            for name, val in links.items()}
 
 
 def relationship(context, relationship, relname=None):
@@ -97,7 +104,10 @@ def relationship(context, relationship, relname=None):
 def _relationship_body_except_data(relationship, collection=None):
     r = dict()
 
-    d = _links(relationship)
+    if collection is None:
+        d = _links(relationship)
+    else:
+        d = _collection_links(relationship)
     if d:
         r['links'] = d
 

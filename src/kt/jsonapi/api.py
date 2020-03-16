@@ -245,7 +245,7 @@ class Context(object):
             self._included_idents.add(key)
         data = [kt.jsonapi.serializers.resource(self, resource)
                 for resource in resources]
-        links = kt.jsonapi.serializers._links(collection)
+        links = kt.jsonapi.serializers._collection_links(collection)
         meta = dict(collection.meta())
         r = dict(data=data)
         if self.included:

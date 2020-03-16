@@ -702,6 +702,34 @@ class CollectionResponseTestCase(tests.utils.JSONAPITestCase):
         self.assertEqual(self.collection.ncalls_set_pagination, 0)
         self.assertEqual(self.collection.ncalls_set_sort, 0)
 
+    def test_with_null_pagination_links(self):
+        create_collection(self)
+        self.collection._links.update(
+            self=kt.jsonapi.link.Link('/'),
+            first=None,
+            next=None,
+            prev=None,
+            last=None,
+        )
+
+        resp = self.http_get('/')
+
+        data = resp.json
+        self.assertEqual(resp.headers['Content-Type'],
+                         'application/vnd.api+json')
+        links = dict(
+            self='/',
+            first=None,
+            next=None,
+            prev=None,
+            last=None,
+        )
+        self.assertEqual(data['links'], links)
+        self.assertEqual(self.collection.ncalls_resources, 1)
+        self.assertEqual(self.collection.ncalls_set_filter, 0)
+        self.assertEqual(self.collection.ncalls_set_pagination, 0)
+        self.assertEqual(self.collection.ncalls_set_sort, 0)
+
     def test_filterable_with_content_without_filter(self):
         create_collection(
             self,
