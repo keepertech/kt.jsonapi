@@ -43,7 +43,7 @@ class QueryStringException(ValueError):
 
     def __init__(self, message, key):
         """Initialize with an error message and the key from query string."""
-        super(InvalidQueryKey, self).__init__(message)
+        super(QueryStringException, self).__init__(message)
         self.key = key
 
 
@@ -179,9 +179,6 @@ class IResource(IResourceIdentifer, ILinksProvider, IMetadataProvider):
 
     def attributes() -> IFieldMapping:
         """Return mapping of attribute names to values."""
-
-    def links():
-        """Return mapping of link names to link objects."""
 
     def relationships() -> IRelationships:
         """Return mapping of relationship names to relationship objects."""
