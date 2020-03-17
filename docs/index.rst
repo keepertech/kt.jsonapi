@@ -8,6 +8,7 @@ kt.jsonapi
     api
     interfaces
     link
+    relation
 
 
 ``kt.jsonapi`` supports generation of `JSON:API`_ responses using

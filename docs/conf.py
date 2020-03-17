@@ -123,13 +123,14 @@ latex_documents = [
 
 autodoc_default_options = {
     'members': True,
+    'inherited-members': True,
     'special-members': '__init__',
-    'show-inheritance': True,
+    # 'show-inheritance': False,
 }
 
 autoclass_content = 'class'
 autodoc_member_order = 'bysource'
-autodoc_typehints = 'description'
+# autodoc_typehints = 'description'
 
 # Bibliographic Dublin Core info.
 epub_title = 'kt.jsonapi'
