@@ -15,9 +15,7 @@ copyright = '2020, Keeper Technology LLC'
 author = 'Keeper Technology'
 
 # The full version, including alpha/beta/rc tags
-release = os.environ.get('KT_COMMON_VERSION') or ''
-
-# The short X.Y version
+release = os.environ.get('KT_VERSION') or ''
 version = release or '(development)'
 
 # -- General configuration ---------------------------------------------------
