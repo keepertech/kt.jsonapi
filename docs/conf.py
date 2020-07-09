@@ -130,7 +130,7 @@ autodoc_default_options = {
 
 autoclass_content = 'class'
 autodoc_member_order = 'bysource'
-# autodoc_typehints = 'description'
+autodoc_typehints = 'description'
 
 # Bibliographic Dublin Core info.
 epub_title = 'kt.jsonapi'

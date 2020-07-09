@@ -12,6 +12,7 @@ Exceptions
 .. autoexception:: InvalidTypeName
 
 .. autoexception:: InvalidQueryKey
+    :no-special-members:
 
     .. automethod:: __init__
 
@@ -23,6 +24,7 @@ Exceptions
         the names defined in the JSON:API specification.
 
 .. autoexception:: InvalidQueryKeyUsage
+    :no-special-members:
 
     .. automethod:: __init__
 
