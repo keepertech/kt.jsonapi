@@ -274,8 +274,8 @@ parameters defined by the JSON:API specification and provides a small
 number of methods to generate responses;
 :meth:`~kt.jsonapi.api.Context.resource` is the method to generate a
 response with a single resource as the primary data.  Additional methods
-are provided to generate responses containing a relationship or
-collection as primary data.
+are provided on the :class:`~kt.jsonapi.api.Context` object to generate
+responses containing a relationship or collection as primary data.
 
 
 .. _Abstract Base Classes:
