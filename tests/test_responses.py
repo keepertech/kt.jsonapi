@@ -499,10 +499,16 @@ class ResourceResponseTestCase(tests.utils.JSONAPITestCase):
         return self.http_get('/')
 
     def test_misc_values_no_include(self):
-        self.check_misc_values_no_included_resources()
+        data = self.check_misc_values_no_included_resources()
+        self.assertNotIn('included', data)
 
     def test_misc_values_no_relevant_include(self):
-        self.check_misc_values_no_included_resources('?include=pecan,pie')
+        # JSON:API 1.1 will require an `included` value, even if empty,
+        # if the request specified `include` in the query string.
+        # https://github.com/json-api/json-api/issues/1230
+        data = self.check_misc_values_no_included_resources(
+            '?include=pecan,pie')
+        self.assertEqual(data['included'], [])
 
     def check_misc_values_no_included_resources(self, query_string=''):
         related = tests.objects.SimpleResource(type='empty')
@@ -547,6 +553,7 @@ class ResourceResponseTestCase(tests.utils.JSONAPITestCase):
             ),
         )
         self.assertEqual(data['data'], expected)
+        return data
 
     def test_misc_values_included_resource(self):
         related = tests.objects.SimpleResource(type='empty')

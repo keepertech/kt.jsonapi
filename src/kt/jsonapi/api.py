@@ -248,7 +248,7 @@ class Context(object):
         links = kt.jsonapi.serializers._collection_links(collection)
         meta = dict(collection.meta())
         r = dict(data=data)
-        if self.included:
+        if self.included or self.relpaths:
             r['included'] = self.included
         if meta:
             r['meta'] = meta
@@ -324,7 +324,7 @@ class Context(object):
         """
         data = kt.jsonapi.serializers.resource(self, resource)
         data = dict(data=data)
-        if self.included:
+        if self.included or self.relpaths:
             data['included'] = self.included
         return self._response(data, headers=headers)
 
