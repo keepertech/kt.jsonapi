@@ -1,4 +1,4 @@
-# (c) 2020.  Keeper Technology LLC.  All Rights Reserved.
+# (c) 2020 - 2021.  Keeper Technology LLC.  All Rights Reserved.
 # Use is subject to license.  Reproduction and distribution is strictly
 # prohibited.
 #
@@ -10,11 +10,14 @@ Tests for kt.jsonapi.api.Context response methods.
 
 """
 
+import uuid
+
 import flask_restful
 import werkzeug.exceptions
 import zope.interface
 
 import kt.jsonapi.api
+import kt.jsonapi.error
 import kt.jsonapi.interfaces
 import kt.jsonapi.link
 import kt.jsonapi.serializers
@@ -41,6 +44,231 @@ def create_collection(test, *ifaces):
     test.collection = tests.objects.SimpleCollection([test.r1, test.r2])
     for iface in ifaces:
         zope.interface.alsoProvides(test.collection, iface)
+
+
+class ErrorResponseTestCase(tests.utils.JSONAPITestCase):
+
+    def setUp(self):
+        super(ErrorResponseTestCase, self).setUp()
+        self.headers = None
+
+        class Render(flask_restful.Resource):
+            def get(inst):
+                self.context = kt.jsonapi.api.context()
+                return self.context.error(self.error,
+                                          headers=self.headers)
+
+        self.api.add_resource(Render, '/')
+
+    def test_minimal_jsonapi_error(self):
+        self.error = kt.jsonapi.error.Error(status=400)
+
+        resp = self.http_get('/', status=self.error.status)
+
+        content = resp.json
+        errors = content['errors']
+        self.assertNotIn('data', content)
+        self.assertNotIn('included', content)
+        self.assertEqual(len(errors), 1)
+        error = errors[0]
+        self.assertEqual(error['status'], '400')
+        # This should be the only field, since that's all we defined.
+        self.assertEqual(list(error), ['status'])
+
+    def test_maximal_jsonapi_error(self):
+        eid = str(uuid.uuid4())
+        about_link = (f'https://api.example.com/error/dont-touch-this'
+                      f'?report={eid}')
+        self.error = kt.jsonapi.error.Error(
+            id=eid,
+            status=403,
+            code='dont-touch-this',
+            title='Do Not Touch This',
+            detail="You don't have permission to touch this.",
+            about=about_link,
+            parameter='this',
+        )
+
+        resp = self.http_get('/?this=that', status=self.error.status)
+
+        content = resp.json
+        errors = content['errors']
+        self.assertNotIn('data', content)
+        self.assertNotIn('included', content)
+        self.assertEqual(len(errors), 1)
+        error = errors[0]
+        self.assertEqual(error['code'], self.error.code)
+        self.assertEqual(error['detail'], self.error.detail)
+        self.assertEqual(error['id'], eid)
+        self.assertEqual(error['links'], dict(about=about_link))
+        self.assertEqual(error['source'], dict(parameter='this'))
+        self.assertEqual(error['status'], '403')
+        self.assertEqual(error['title'], self.error.title)
+
+    def test_jsonapi_error_without_status(self):
+        self.error = kt.jsonapi.error.Error(
+            id=str(uuid.uuid4()),
+            pointer='/data/meta',
+        )
+
+        resp = self.http_get('/', status=500)
+
+        content = resp.json
+        errors = content['errors']
+        self.assertNotIn('data', content)
+        self.assertNotIn('included', content)
+        self.assertEqual(len(errors), 1)
+        error, = errors
+        self.assertEqual(error['id'], self.error.id)
+        self.assertEqual(error['source'], dict(pointer='/data/meta'))
+
+    def test_jsonapi_error_with_interesting_link(self):
+        eid = str(uuid.uuid4())
+        about_link = (f'https://api.example.com/error/dont-touch-this'
+                      f'?report={eid}')
+        self.error = kt.jsonapi.error.Error(
+            id=eid,
+            status=400,
+            about=kt.jsonapi.link.Link(href=about_link,
+                                       meta=dict(alternate='just-dont')),
+            meta=dict(noisy=True),
+        )
+
+        resp = self.http_get('/', status=self.error.status)
+
+        content = resp.json
+        errors = content['errors']
+        self.assertNotIn('data', content)
+        self.assertNotIn('included', content)
+        self.assertEqual(len(errors), 1)
+        error = errors[0]
+        self.assertEqual(error['id'], eid)
+        self.assertEqual(error['links'],
+                         dict(
+                             about=dict(
+                                 href=about_link,
+                                 meta=dict(alternate='just-dont'),
+                             ),
+                         ))
+        self.assertEqual(error['meta'], dict(noisy=True))
+        self.assertEqual(error['status'], '400')
+
+    def test_multiple_jsonapi_errors_same_status(self):
+        e0 = kt.jsonapi.error.Error(
+            id=str(uuid.uuid4()),
+            status=403,
+            code='dont-touch-this-0',
+        )
+        e1 = kt.jsonapi.error.Error(
+            id=str(uuid.uuid4()),
+            status=e0.status,
+            code='dont-touch-this-1',
+        )
+        self.error = kt.jsonapi.error.Errors([e0, e1])
+
+        # Expect the status from the individual errors since they're all
+        # the same:
+        resp = self.http_get('/?this=that', status=e0.status)
+
+        content = resp.json
+        errors = content['errors']
+        self.assertNotIn('data', content)
+        self.assertNotIn('included', content)
+        self.assertEqual(len(errors), 2)
+        err0, err1 = errors
+        self.assertEqual(err0['code'], e0.code)
+        self.assertEqual(err0['id'], e0.id)
+        self.assertEqual(err0['status'], '403')
+        self.assertEqual(err1['code'], e1.code)
+        self.assertEqual(err1['id'], e1.id)
+        self.assertEqual(err1['status'], '403')
+
+    def test_multiple_jsonapi_errors_mixed_errors(self):
+        e0 = kt.jsonapi.error.Error(
+            id=str(uuid.uuid4()),
+            status=501,
+            code='cant-find-this-0',
+        )
+        e1 = kt.jsonapi.error.Error(
+            id=str(uuid.uuid4()),
+            status=402,
+            code='pay-your-bill',
+        )
+        self.error = kt.jsonapi.error.Errors([e0, e1])
+
+        # Multiple statuses with any >= 500 generate a general 500:
+        resp = self.http_get('/?this=that', status=500)
+
+        content = resp.json
+        errors = content['errors']
+        self.assertNotIn('data', content)
+        self.assertNotIn('included', content)
+        self.assertEqual(len(errors), 2)
+        err0, err1 = errors
+        self.assertEqual(err0['code'], e0.code)
+        self.assertEqual(err0['id'], e0.id)
+        self.assertEqual(err0['status'], '501')
+        self.assertEqual(err1['code'], e1.code)
+        self.assertEqual(err1['id'], e1.id)
+        self.assertEqual(err1['status'], '402')
+
+    def test_multiple_jsonapi_errors_mixed_client_errors(self):
+        e0 = kt.jsonapi.error.Error(
+            id=str(uuid.uuid4()),
+            status=401,
+            code='dont-touch-this-0',
+        )
+        e1 = kt.jsonapi.error.Error(
+            id=str(uuid.uuid4()),
+            status=403,
+            code='dont-touch-this-1',
+        )
+        self.error = kt.jsonapi.error.Errors([e0, e1])
+
+        # Multiple statuses all < 500 generate a general 400:
+        resp = self.http_get('/?this=that', status=400)
+
+        content = resp.json
+        errors = content['errors']
+        self.assertNotIn('data', content)
+        self.assertNotIn('included', content)
+        self.assertEqual(len(errors), 2)
+        err0, err1 = errors
+        self.assertEqual(err0['code'], e0.code)
+        self.assertEqual(err0['id'], e0.id)
+        self.assertEqual(err0['status'], '401')
+        self.assertEqual(err1['code'], e1.code)
+        self.assertEqual(err1['id'], e1.id)
+        self.assertEqual(err1['status'], '403')
+
+    def test_multiple_jsonapi_errors_mixed_server_errors(self):
+        e0 = kt.jsonapi.error.Error(
+            id=str(uuid.uuid4()),
+            status=501,
+            code='cant-find-this-0',
+        )
+        e1 = kt.jsonapi.error.Error(
+            id=str(uuid.uuid4()),
+            status=502,
+            code='cant-talk-to-this',
+        )
+        self.error = kt.jsonapi.error.Errors([e0, e1])
+
+        # Multiple statuses with any >= 500 generate a general 500:
+        resp = self.http_get('/?this=that', status=500)
+
+        content = resp.json
+        errors = content['errors']
+        self.assertNotIn('data', content)
+        self.assertNotIn('included', content)
+        self.assertEqual(len(errors), 2)
+        err0, err1 = errors
+        self.assertEqual(err0['code'], e0.code)
+        self.assertEqual(err0['id'], e0.id)
+        self.assertEqual(err0['status'], '501')
+        self.assertEqual(err1['code'], e1.code)
+        self.assertEqual(err1['id'], e1.id)
+        self.assertEqual(err1['status'], '502')
 
 
 class RelationshipResponseTestCase(tests.utils.JSONAPITestCase):

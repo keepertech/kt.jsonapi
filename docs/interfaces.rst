@@ -53,6 +53,16 @@ Exceptions
         Value acquired from the query string before interpretation was
         attempted.
 
+.. autoexception:: InvalidResultStructure
+    :no-special-members:
+
+    .. automethod:: __init__
+
+    .. attribute:: kind
+        :type: str
+
+        Name of the construct as defined in the JSON:API specification.
+
 
 Fields
 ------
@@ -86,3 +96,5 @@ Interfaces
 .. autointerface:: IRelationshipBase
 .. autointerface:: IToOneRelationship
 .. autointerface:: IToManyRelationship
+.. autointerface:: IError
+.. autointerface:: IErrors

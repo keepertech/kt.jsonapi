@@ -14,6 +14,14 @@ The current implementation works with the Flask_ web framework.
 Release history
 ---------------
 
+#. Serialization of errors via adaptation is supported using a new
+   context method.  This includes support for multiple error objects in
+   a single response.  This does *not* cause JSON:API errors to be
+   returned automatically from response methods on the context, since
+   switching from a planned response to an error response should invoke
+   content negotiation; this is left to integration layers.
+   https://kt-git.keepertech.com/DevTools/kt.jsonapi/-/issues/3
+
 #. Support relationships that cannot be included in composite documents
    using the ``include`` query string parameter.  A request for
    inclusion of resources from a non-empty, non-includable relationship

@@ -14,10 +14,26 @@ import werkzeug.exceptions
 import zope.component
 
 import kt.jsonapi.api
+import kt.jsonapi.error
+import kt.jsonapi.interfaces
 import kt.jsonapi.link
 import kt.jsonapi.serializers
 import tests.objects
 import tests.utils
+
+
+class ErrorSerializerTestCase(tests.utils.JSONAPITestCase):
+
+    def test_empty_error(self):
+        error = kt.jsonapi.error.Error()
+
+        with self.assertRaises(
+                kt.jsonapi.interfaces.InvalidResultStructure) as cm:
+            kt.jsonapi.serializers.error(error)
+
+        message = str(cm.exception)
+        self.assertIn(' for error', message)
+        self.assertIn('serialization generated invalid structure', message)
 
 
 class ToOneRelationshipSerializerTestCase(tests.utils.JSONAPITestCase):

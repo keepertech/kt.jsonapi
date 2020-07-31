@@ -51,6 +51,33 @@ def _links(ob):
             for name, val in links.items()}
 
 
+def error(error):
+    r = dict()
+    if error.id is not None:
+        r['id'] = error.id
+    if error.status is not None:
+        r['status'] = str(error.status)
+    if error.code is not None:
+        r['code'] = error.code
+    if error.title is not None:
+        r['title'] = error.title
+    if error.detail is not None:
+        r['detail'] = error.detail
+    lnks = _links(error)
+    if lnks:
+        r['links'] = lnks
+    meta = error.meta()
+    if meta:
+        r['meta'] = meta
+    src = error.source()
+    if src:
+        r['source'] = src
+    if not r:
+        # https://github.com/json-api/json-api/issues/1496
+        raise kt.jsonapi.interfaces.InvalidResultStructure('error')
+    return r
+
+
 def relationship(context, relationship, relname=None):
     collection = None
     r = dict()

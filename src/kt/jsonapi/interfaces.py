@@ -14,7 +14,9 @@ import re
 import typing
 
 import zope.interface
+import zope.interface.common.interfaces
 import zope.interface.common.mapping
+import zope.interface.common.sequence
 import zope.schema
 import zope.schema.interfaces
 
@@ -26,6 +28,47 @@ _re_member_name = f'{_re_gac}({_re_memch}*{_re_gac})?$'
 _rx_member_name = re.compile(_re_member_name.replace(' ', ''))
 
 
+# --------------------
+# Exception interfaces
+
+
+class IQueryStringException(zope.interface.common.interfaces.IValueError):
+    """Interface for QueryStringException instances."""
+
+    key = zope.schema.TextLine(
+        title='Key',
+        description='Name of key in query string',
+        required=True,
+    )
+
+
+class IInvalidNameException(zope.interface.common.interfaces.IException):
+    """Interface for the Invalid* exceptions."""
+
+    field = zope.schema.Object(
+        description='Field which failed validation',
+        schema=zope.schema.interfaces.IField,
+        required=True,
+    )
+
+    value = zope.interface.Attribute("Value determined to be invalid")
+
+
+class IInvalidResultStructure(zope.interface.common.interfaces.IValueError):
+    """Interface for InvalidResultStructure instances."""
+
+    kind = zope.schema.TextLine(
+        description=('Name of the structure as defined in the'
+                     ' JSON:API specification'),
+        required=True,
+    )
+
+
+# ----------
+# Exceptions
+
+
+@zope.interface.implementer(IInvalidNameException)
 class _InvalidName(zope.schema.interfaces.ValidationError):
     """Name is invalid according to JSON:API."""
 
@@ -43,6 +86,7 @@ class InvalidTypeName(_InvalidName):
     """Type name is invalid according to JSON:API."""
 
 
+@zope.interface.implementer(IQueryStringException)
 class QueryStringException(ValueError):
     """Something is wrong with the format or content of the query string."""
 
@@ -69,7 +113,38 @@ class InvalidQueryKeyValue(QueryStringException):
         self.value = value
 
 
+@zope.interface.implementer(IInvalidResultStructure)
+class InvalidResultStructure(ValueError):
+    """Serialization resulted in an invalid structure."""
+
+    def __init__(self, kind):
+        """Construct exception for a specific *kind* of structure.
+
+        *kind* should be a term defined in the JSON:API specification.
+
+        """
+        super(InvalidResultStructure, self).__init__(kind)
+        self.kind = kind
+
+    def __str__(self):
+        return f'serialization generated invalid structure for {self.kind}'
+
+
+# -----------------
+# Field definitions
+
+
 class _Name(zope.schema.TextLine):
+
+    def __init__(self, *args, **kwargs):
+        # The constructor for zope.interface.Element uses __name__ for
+        # __doc__, and sets __name__ to None, if there's a space in
+        # __name__.  Since our field names are generated based on user
+        # input, this is wrong behavior for us, so work around it.
+        name = kwargs.pop('__name__', None)
+        kwargs['__name__'] = 'xxx'
+        super(_Name, self).__init__(*args, **kwargs)
+        self.__name__ = name
 
     def constraint(self, value):
         if _rx_member_name.match(value) is None:
@@ -110,7 +185,6 @@ class RelationshipPath(_Name):
             for part in value.split('.'):
                 super(RelationshipPath, self).constraint(part)
         except InvalidRelationshipPath as e:
-            e.field = part
             e.value = value
             raise
         else:
@@ -141,6 +215,10 @@ class URL(zope.schema.TextLine):
             min_length=(min_length or 1),
         )
         super(URL, self).__init__(**kwargs)
+
+
+# ---------------------------------------------
+# Interfaces used when everything is going well
 
 
 class IFieldMapping(zope.interface.common.mapping.IEnumerableMapping):
@@ -338,3 +416,70 @@ class IToManyRelationship(IRelationshipBase):
         the relationship is rendered as the primary data in a response.
 
         """
+
+
+class IError(ILinksProvider, IMetadataProvider):
+    """Presentation of a single error.
+
+    See `Error Objects <https://jsonapi.org/format/#error-objects>`__
+    for discussion on the specific information that each field or method
+    result represents.
+
+    """
+
+    id = zope.schema.Text(
+        title='Identifier',
+        description='Identifier for this particular instance of a problem',
+        required=False,
+        missing_value=None,
+    )
+
+    status = zope.schema.Int(
+        title='Status code',
+        description='HTTP status code',
+        min=400,
+        max=599,
+        required=False,
+        missing_value=None,
+    )
+
+    code = zope.schema.TextLine(
+        title='Code',
+        description='Error code identifying the specific application error',
+        required=False,
+        missing_value=None,
+    )
+
+    title = zope.schema.TextLine(
+        title='Title',
+        description='Human-facing title describing the application error',
+        required=False,
+        missing_value=None,
+    )
+
+    detail = zope.schema.Text(
+        title='Detailed description',
+        description='Human-facing description of this instance of the problem',
+        required=False,
+        missing_value=None,
+    )
+
+    def source() -> IFieldMapping:
+        """Returns mapping containing references to the source of the error.
+
+        The mapping may be empty.
+
+        """
+
+
+class IErrors(zope.interface.common.sequence.IMinimalSequence):
+    """Interface representing a collection of `IError` instances.
+
+    When generating a JSON:API response from an exception, the exception
+    will be adapted to this interface if possible.  On success, each
+    entry in the ``errors`` property in the generated response will
+    correspond to an entry in this sequence.
+
+    This sequence cannot be empty.
+
+    """

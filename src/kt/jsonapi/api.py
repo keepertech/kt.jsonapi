@@ -1,4 +1,4 @@
-# (c) 2020.  Keeper Technology LLC.  All Rights Reserved.
+# (c) 2020 - 2021.  Keeper Technology LLC.  All Rights Reserved.
 # Use is subject to license.  Reproduction and distribution is strictly
 # prohibited.
 #
@@ -87,7 +87,61 @@ class QueryParameter(object):
         self.aspect = aspect
 
 
-class Context(object):
+class _BaseContext:
+
+    def __init__(self, app, request):
+        """Initialize information needed from the request.
+
+        All information is captured from the request up front, instead
+        of relying on being able to get it later.
+
+        """
+        self._json_encoder = app.json_encoder
+
+    def error(self, error, headers=None):
+        """Generate error response from exception.
+
+        If *headers* is given and non-``None``, it must be be mapping of
+        additional headers that should be returned in the request.  If a
+        **Content-Type** header is provided, it will be used instead of
+        the default value for JSON:API responses.
+
+        """
+        seq = kt.jsonapi.interfaces.IErrors(error, None)
+        if seq is None:
+            ierr = kt.jsonapi.interfaces.IError(error)
+            seq = (ierr,)
+        else:
+            seq = tuple(kt.jsonapi.interfaces.IError(error)
+                        for error in seq)
+        body = dict(errors=[kt.jsonapi.serializers.error(err)
+                            for err in seq])
+        statuses = set(err.status for err in seq if err.status)
+        if len(statuses) == 1:
+            # All the same, just use it:
+            status = statuses.pop()
+        elif not statuses:
+            # Nothing specified, so the situation is bad:
+            status = 500
+        else:
+            statuses = sorted(statuses)
+            if statuses[-1] >= 500:
+                status = 500
+            else:
+                status = 400
+        return self._response(body, headers=headers, status=status)
+
+    def _response(self, body, headers=None, status=200):
+        data = json.dumps(body, cls=self._json_encoder).encode('utf-8')
+        hdrs = flask.app.Headers()
+        if headers is not None:
+            hdrs.extend(headers)
+        if 'Content-Type' not in hdrs:
+            hdrs['Content-Type'] = CONTENT_TYPE
+        return flask.make_response(data, status, hdrs)
+
+
+class Context(_BaseContext):
     """Request context containing JSON:API-specific information.
 
     Sub-classes or alternatives may be constructed for request objects
@@ -100,9 +154,8 @@ class Context(object):
     #
     _query_parts = 'fields', 'filter', 'include', 'page', 'sort'
 
-    _field_name = kt.jsonapi.interfaces.MemberName()
-    _relationship_path = kt.jsonapi.interfaces.RelationshipPath()
-    _type_name = kt.jsonapi.interfaces.TypeName()
+    _relationship_path = kt.jsonapi.interfaces.RelationshipPath(
+        __name__='include')
 
     def __init__(self, app, request):
         """Initialize information needed from the request.
@@ -113,6 +166,7 @@ class Context(object):
         early as possible.
 
         """
+        super(Context, self).__init__(app, request)
         # request information
         self.fields = {}
         self.relpaths = set()
@@ -121,7 +175,6 @@ class Context(object):
         # response information
         self.included = []
         self._included_idents = set()
-        self._json_encoder = app.json_encoder
         self._relstack = []
 
     def _extract_query_string(self, request):
@@ -178,7 +231,7 @@ class Context(object):
                 value=self._query['fields'])
         for tname, tfields in self._query.get('fields', {}).items():
             key = f'fields[{tname}]'
-            self._type_name.validate(tname)
+            kt.jsonapi.interfaces.TypeName(__name__=key).validate(tname)
             # validate type name
             if isinstance(tfields, dict):
                 raise kt.jsonapi.interfaces.InvalidQueryKeyValue(
@@ -188,9 +241,10 @@ class Context(object):
                     value=tfields)
             if tfields:
                 tfields = tfields.split(',')
-                for tfield in tfields:
+                field = kt.jsonapi.interfaces.MemberName(__name__=key)
+                for ndx, tfield in enumerate(tfields):
                     # validate field name
-                    self._field_name.validate(tfield)
+                    field.validate(tfield)
                 self.fields[tname] = set(tfields)
             else:
                 self.fields[tname] = set()
@@ -450,14 +504,17 @@ class Context(object):
                 link = link['href']
         return link
 
-    def _response(self, body, headers=None, status=200):
-        data = json.dumps(body, cls=self._json_encoder).encode('utf-8')
-        hdrs = flask.app.Headers()
-        if headers is not None:
-            hdrs.extend(headers)
-        if 'Content-Type' not in hdrs:
-            hdrs['Content-Type'] = CONTENT_TYPE
-        return flask.make_response(data, status, hdrs)
+
+class ErrorContext(_BaseContext):
+    """Request context for JSON:API responses.
+
+    This context is suitable for handling errors being returned to a
+    client, but not for general JSON:API response serialization.  No
+    parsing of the query string is performed, allowing JSON:API error
+    responses to be provided even from endpoints that take incompatible
+    query string parameters.
+
+    """
 
 
 def context():
@@ -467,10 +524,31 @@ def context():
     be associated with each request.
 
     """
+    return __get_context(factory=Context)
+
+
+def error_context():
+    """Get JSON:API context for current Flask request, suitable for error
+    serialization.
+
+    A new context will be created if needed, but no new query string
+    parsing will be performed.  At most one context will be associated
+    with each request.
+
+    Only the :meth:`~kt.jsonapi.api.Context.error` method should be
+    invoked on the returned context.
+
+    """
+    ctx = __get_context(factory=ErrorContext)
+    ctx.__class__ = ErrorContext
+    return ctx
+
+
+def __get_context(factory):
     try:
         ctx = flask.g.__jsonapi_context
     except AttributeError:
-        ctx = Context(flask.current_app._get_current_object(),
+        ctx = factory(flask.current_app._get_current_object(),
                       flask.request._get_current_object())
         flask.g.__jsonapi_context = ctx
     return ctx

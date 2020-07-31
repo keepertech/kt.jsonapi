@@ -78,7 +78,7 @@ class ContextClassTestCase(tests.utils.JSONAPITestCase):
                 kt.jsonapi.interfaces.InvalidRelationshipPath) as cm:
             with self.request_context('/?include=abc.def ghi'):
                 self.get_context()
-        self.assertEqual(cm.exception.field, 'def ghi')
+        self.assertEqual(cm.exception.field.__name__, 'include')
         self.assertEqual(cm.exception.value, 'abc.def ghi')
 
     def test_include_invalid_relpath_2(self):
@@ -86,7 +86,7 @@ class ContextClassTestCase(tests.utils.JSONAPITestCase):
                 kt.jsonapi.interfaces.InvalidRelationshipPath) as cm:
             with self.request_context('/?include=alternate,abc.def-ghi,'):
                 self.get_context()
-        self.assertEqual(cm.exception.field, '')
+        self.assertEqual(cm.exception.field.__name__, 'include')
         self.assertEqual(cm.exception.value, '')
 
     def test_fields_include_together(self):
@@ -99,6 +99,13 @@ class ContextClassTestCase(tests.utils.JSONAPITestCase):
         self.assertEqual(rc.fields['abc'], {'a', 'b'})
         self.assertEqual(rc.fields['def'], {'e'})
         self.assertEqual(rc.relpaths, {'abc', 'def', 'def.ghi'})
+
+    def test_fields_invalid_type_name(self):
+        with self.assertRaises(kt.jsonapi.interfaces.InvalidTypeName) as cm:
+            with self.request_context('/?fields[abc def]=a,b'):
+                self.get_context()
+        self.assertEqual(cm.exception.field.__name__, 'fields[abc def]')
+        self.assertEqual(cm.exception.value, 'abc def')
 
     def test_error_repeated_key_fields_sometype(self):
         with self.assertRaises(
@@ -166,6 +173,7 @@ class ContextClassTestCase(tests.utils.JSONAPITestCase):
         with self.assertRaises(kt.jsonapi.interfaces.InvalidMemberName) as cm:
             with self.request_context('/?fields[type]=ok,some junk'):
                 self.get_context()
+        self.assertEqual(cm.exception.field.__name__, 'fields[type]')
         self.assertEqual(cm.exception.value, 'some junk')
         # message = str(cm.exception)
         # self.assertEqual(message, '')
@@ -277,3 +285,37 @@ class ContextGetterTestCase(ContextClassTestCase):
         self.assertIsNot(rc1, rc2)
         self.assertEqual(rc1.fields['abc'], {'a', 'b'})
         self.assertEqual(rc2.fields['abc'], {'d', 'e'})
+
+
+class ErrorContextClassTestCase(tests.utils.JSONAPITestCase):
+
+    def get_context(self):
+        return kt.jsonapi.api.ErrorContext(
+            flask.current_app._get_current_object(),
+            flask.request._get_current_object())
+
+    # Check some of the error conditions for a normal context and verify
+    # they are not reported as errors here:
+
+    def test_error_value_already_container(self):
+        with self.request_context('/?filter[kong]=spam&filter=spandex'):
+            context = self.get_context()
+        self.assertIsInstance(context, kt.jsonapi.api.ErrorContext)
+
+    def test_error_fields_not_container(self):
+        with self.request_context('/?fields=somejunk'):
+            context = self.get_context()
+        self.assertIsInstance(context, kt.jsonapi.api.ErrorContext)
+
+
+class ErrorContextGetterTestCase(ErrorContextClassTestCase):
+
+    def get_context(self):
+        return kt.jsonapi.api.error_context()
+
+    def test_error_context_degrades_existing_context(self):
+        with self.request_context('/'):
+            rc = kt.jsonapi.api.context()
+            ec = kt.jsonapi.api.error_context()
+        self.assertIs(rc, ec)
+        self.assertIsInstance(rc, kt.jsonapi.api.ErrorContext)

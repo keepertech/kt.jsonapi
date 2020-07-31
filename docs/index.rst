@@ -7,6 +7,7 @@ kt.jsonapi
     introduction
     api
     interfaces
+    error
     link
     relation
 
