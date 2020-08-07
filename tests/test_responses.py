@@ -607,6 +607,39 @@ class ResourceResponseTestCase(tests.utils.JSONAPITestCase):
         )]
         self.assertEqual(data['included'], included)
 
+    def test_resource_suppress_all_fields(self):
+        related = tests.objects.SimpleResource(type='empty')
+        relation = tests.objects.ToOneRel(related,
+                                          meta={'last_updated': 'tomorrow'})
+        resource = tests.objects.SimpleResource(
+            attributes={'basic-attr': 42,
+                        'list-attr': ['a', 'b', 'c'],
+                        'string-attr': 'text'},
+            meta={'version': 24},
+            relationships={'configuration': relation},
+        )
+
+        class Render(flask_restful.Resource):
+            def get(inst):
+                return kt.jsonapi.api.context().resource(resource)
+
+        self.api.add_resource(Render, '/')
+
+        resp = self.http_get('/?fields[%s]=' % resource.type)
+        data = resp.json
+        self.assertEqual(resp.headers['Content-Type'],
+                         'application/vnd.api+json')
+        expected = dict(
+            id=resource.id,
+            type=resource.type,
+            links=dict(
+                self=resource.links()['self'].href,
+            ),
+            meta=dict(version=24),
+        )
+        self.assertEqual(data['data'], expected)
+        self.assertNotIn('included', data)
+
 
 class CollectionResponseTestCase(tests.utils.JSONAPITestCase):
 

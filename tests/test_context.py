@@ -29,6 +29,15 @@ class ContextClassTestCase(tests.utils.JSONAPITestCase):
         self.assertEqual(rc.fields, {})
         self.assertEqual(rc.relpaths, set())
 
+    def test_fields_empty(self):
+        with self.request_context('/?fields[abc]='):
+            rc = self.get_context()
+        self.assertIsInstance(rc.fields, dict)
+        self.assertIsInstance(rc.relpaths, set)
+        self.assertEqual(sorted(rc.fields), ['abc'])
+        self.assertEqual(rc.fields['abc'], set())
+        self.assertEqual(rc.relpaths, set())
+
     def test_fields_simple(self):
         with self.request_context('/?fields[abc]=a,b&fields[def]=e'):
             rc = self.get_context()

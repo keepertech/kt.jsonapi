@@ -114,7 +114,7 @@ class Context(object):
         return request.query_string.decode('utf-8')
 
     def _parse_query_string(self, query_string):
-        input = urllib.parse.parse_qs(query_string)
+        input = urllib.parse.parse_qs(query_string, keep_blank_values=True)
         self._query = dict()
         for key, values in input.items():
             topname, _, _ = key.partition('[')
@@ -169,11 +169,14 @@ class Context(object):
                 raise kt.jsonapi.interfaces.InvalidQueryKeyUsage(
                     f'query string key {key!r} may have only one value',
                     key=key)
-            tfields = tfields[0].split(',')
-            for tfield in tfields:
-                # validate field name
-                self._field_name.validate(tfield)
-            self.fields[tname] = set(tfields)
+            if tfields[0]:
+                tfields = tfields[0].split(',')
+                for tfield in tfields:
+                    # validate field name
+                    self._field_name.validate(tfield)
+                self.fields[tname] = set(tfields)
+            else:
+                self.fields[tname] = set()
 
         if 'include' in self._query:
             key = 'include'
