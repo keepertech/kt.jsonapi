@@ -14,6 +14,10 @@ The current implementation works with the Flask_ web framework.
 Release history
 ---------------
 
+
+1.0.1 (2020-09-18)
+~~~~~~~~~~~~~~~~~~
+
 #. Support explicit request to receive no fields by resource type.  This
    reflects a recent clarification added to the JSON:API specification.
    https://kt-git.keepertech.com/DevTools/kt.jsonapi/issues/7
