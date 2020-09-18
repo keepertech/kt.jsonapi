@@ -23,6 +23,9 @@ Release history
    conformance with JSON:API 1.1.
    https://github.com/json-api/json-api/issues/1230
 
+#. Adapt source object to IResource in relationship implementations.
+   https://kt-git.keepertech.com/DevTools/kt.jsonapi/issues/9
+
 
 1.0.0 (2020-07-09)
 ~~~~~~~~~~~~~~~~~~

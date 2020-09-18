@@ -10,13 +10,67 @@ Tests for kt.jsonapi.relation.
 
 """
 
+import os
+
+import zope.component
+import zope.component.hooks
+import zope.interface
+import zope.interface.registry
+
 import kt.jsonapi.relation
 import kt.jsonapi.interfaces
 import tests.objects
 import tests.utils
 
 
-class ToOneRelationshipTestCase(tests.utils.JSONAPITestCase):
+class IThing(zope.interface.Interface):
+    """Arbitrary non-IResource thing for testing."""
+
+
+@zope.interface.implementer(IThing)
+class Thing:
+
+    def __init__(self, attrs={}, rels={}, type='some-thing'):
+        self.attrs = dict(attrs)
+        self.rels = dict(rels)
+        self.type = type
+        self.id = os.urandom(4).hex()
+
+
+@zope.component.adapter(IThing)
+@zope.interface.implementer(kt.jsonapi.interfaces.IResource)
+def resource_thing(thing):
+    return tests.objects.SimpleResource(
+        id=thing.id,
+        type=thing.type,
+        attributes=thing.attrs,
+        relationships=thing.rels,
+    )
+
+
+class AdaptersHelper:
+
+    def setUp(self):
+        super(AdaptersHelper, self).setUp()
+        #
+        # Set up our own site manager for adapter registrations to avoid
+        # polluting the global site manager in tests.
+        #
+        self._oldsite = zope.component.hooks.getSite()
+        self._registry = zope.interface.registry.Components()
+        zope.component.hooks.setSite(self)
+        zope.component.provideAdapter(resource_thing)
+
+    def tearDown(self):
+        zope.component.hooks.setSite(self._oldsite)
+        super(AdaptersHelper, self).tearDown()
+
+    def getSiteManager(self):
+        return self._registry
+
+
+class ToOneRelationshipTestCase(AdaptersHelper,
+                                tests.utils.JSONAPITestCase):
 
     def test_error_addressable_requires_name(self):
         source = tests.objects.SimpleResource()
@@ -126,8 +180,32 @@ class ToOneRelationshipTestCase(tests.utils.JSONAPITestCase):
         self.assertEqual(links['self'].href,
                          source_href + '/relationships/rel')
 
+    def test_source_needs_adaptation(self):
+        source = Thing(attrs=dict(foo='bar'))
+        relation = kt.jsonapi.relation.ToOneRelationship(source, None, 'rel',
+                                                         addressable=True)
+        source.rels['rel'] = relation
 
-class ToManyRelationshipTestCase(tests.utils.JSONAPITestCase):
+        links = dict(relation.links())
+        self.assertEqual(links['self'].href,
+                         f'/some-thing/{source.id}/relationships/rel')
+
+    def test_target_needs_adaptation(self):
+        source = tests.objects.SimpleResource()
+        target = Thing(attrs=dict(foo='bar'))
+        relation = kt.jsonapi.relation.ToOneRelationship(source, target, 'rel',
+                                                         addressable=True)
+        source._relationships['rel'] = relation
+
+        links = dict(relation.links())
+        source_href = source.links()['self'].href
+        self.assertEqual(links['related'].href,
+                         f'/some-thing/{target.id}')
+        self.assertEqual(links['self'].href,
+                         source_href + '/relationships/rel')
+
+class ToManyRelationshipTestCase(AdaptersHelper,
+                                 tests.utils.JSONAPITestCase):
 
     def test_error_addressable_requires_name(self):
         source = tests.objects.SimpleResource()

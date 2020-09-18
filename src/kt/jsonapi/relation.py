@@ -43,7 +43,7 @@ class RelationshipBase:
     def __init__(self, source, target, name, addressable):
         if addressable and not name:
             raise ValueError('addressable relationships must have a name')
-        self.source = source
+        self.source = kt.jsonapi.interfaces.IResource(source)
         self.target = target
         self.name = name
         self.addressable = addressable
@@ -90,6 +90,8 @@ class ToOneRelationship(RelationshipBase):
         """
         if indirect and not name:
             raise ValueError('indirect relationships must have a name')
+        if target is not None:
+            target = kt.jsonapi.interfaces.IResource(target)
         super(ToOneRelationship, self).__init__(source, target, name,
                                                 addressable)
         self.indirect = indirect
@@ -110,8 +112,7 @@ class ToOneRelationship(RelationshipBase):
             links['related'] = kt.jsonapi.link.Link(
                 f'{source_href}/{self.name}')
         elif self.target is not None:
-            related = kt.jsonapi.interfaces.IResource(self.target)
-            links['related'] = related.links()['self']
+            links['related'] = self.target.links()['self']
         if self.addressable:
             links['self'] = kt.jsonapi.link.Link(
                 f'{source_href}/relationships/{self.name}')
