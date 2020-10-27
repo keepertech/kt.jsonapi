@@ -331,14 +331,37 @@ class Context(object):
             data['included'] = self.included
         return self._response(data, headers=headers)
 
-    def _response(self, body, headers=None):
+    def created(self, resource, headers=None, location=None):
+        """Generate response containing a resource as primary data.
+
+        If *headers* is given and non-``None``, it must be be mapping of
+        additional headers that should be returned in the request.  If a
+        **Content-Type** header is provided, it will be used instead of
+        the default value for JSON:API responses.
+
+        The response will carry a 201 status code to indicate that the
+        resource was successfully created.
+
+        """
+        data = kt.jsonapi.serializers.resource(self, resource)
+        data = dict(data=data)
+        if self.included or self.relpaths:
+            data['included'] = self.included
+        hdrs = flask.app.Headers()
+        if headers is not None:
+            hdrs.extend(headers)
+        if location:
+            hdrs['Location'] = location
+        return self._response(data, headers=hdrs, status=201)
+
+    def _response(self, body, headers=None, status=200):
         data = json.dumps(body, cls=self._json_encoder).encode('utf-8')
         hdrs = flask.app.Headers()
         if headers is not None:
             hdrs.extend(headers)
         if 'Content-Type' not in hdrs:
-            hdrs['Content-Type'] = 'application/vnd.api+json'
-        return flask.make_response(data, 200, hdrs)
+            hdrs['Content-Type'] = CONTENT_TYPE
+        return flask.make_response(data, status, hdrs)
 
 
 def context():

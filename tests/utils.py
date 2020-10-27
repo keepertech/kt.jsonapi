@@ -40,3 +40,11 @@ class JSONAPITestCase(unittest.TestCase):
                 response.status_code, status,
                 f'GET {path} status {response.status_code}, expected {status}')
         return response
+
+    def http_post(self, path, status=201, **kwargs):
+        response = self.client.post(path, **kwargs)
+        if status:
+            self.assertEqual(
+                response.status_code, status,
+                f'POST {path} status {response.status_code}, expected {status}')
+        return response

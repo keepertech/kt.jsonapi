@@ -14,6 +14,11 @@ The current implementation works with the Flask_ web framework.
 Release history
 ---------------
 
+#. Added ``created()`` method on the context object, for use in
+   returning a response containing a newly created resource.  Similar to
+   ``resource()``, it returns a 201 status code and a serialization of
+   the created resource.
+
 
 1.0.1 (2020-09-18)
 ~~~~~~~~~~~~~~~~~~

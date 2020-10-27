@@ -641,6 +641,162 @@ class ResourceResponseTestCase(tests.utils.JSONAPITestCase):
         self.assertNotIn('included', data)
 
 
+class CreatedResponseTestCase(ResourceResponseTestCase):
+
+    location = 'http://example.test/some-thing/42'
+
+    def prepare_passing_headers_through(self, headers):
+        resource = tests.objects.SimpleResource(attributes=dict(simple=True))
+
+        class Render(flask_restful.Resource):
+            def post(inst):
+                return kt.jsonapi.api.context().created(resource,
+                                                        headers=headers,
+                                                        location=self.location)
+
+        self.api.add_resource(Render, '/')
+
+        resp = self.http_post('/')
+        self.assertEqual(resp.headers['Location'], self.location)
+        return resp
+
+    def check_misc_values_no_included_resources(self, query_string=''):
+        related = tests.objects.SimpleResource(type='empty')
+        relation = tests.objects.ToOneRel(related,
+                                          meta={'last_updated': 'tomorrow'})
+        resource = tests.objects.SimpleResource(
+            attributes={'basic-attr': 42,
+                        'list-attr': ['a', 'b', 'c'],
+                        'string-attr': 'text'},
+            meta={'version': 24},
+            relationships={'configuration': relation},
+        )
+
+        class Render(flask_restful.Resource):
+            def post(inst):
+                return kt.jsonapi.api.context().created(resource,
+                                                        location=self.location)
+
+        self.api.add_resource(Render, '/')
+
+        resp = self.http_post('/' + query_string)
+        self.assertEqual(resp.headers['Location'], self.location)
+        self.assertEqual(resp.headers['Content-Type'],
+                         'application/vnd.api+json')
+        data = resp.json
+        expected = dict(
+            id=resource.id,
+            type=resource.type,
+            attributes={
+                'basic-attr': 42,
+                'list-attr': ['a', 'b', 'c'],
+                'string-attr': 'text',
+            },
+            links=dict(
+                self=resource.links()['self'].href,
+            ),
+            meta=dict(version=24),
+            relationships=dict(
+                configuration=dict(
+                    data=dict(type=related.type, id=related.id),
+                    links=dict(related=related.links()['self'].href),
+                    meta=dict(last_updated='tomorrow'),
+                ),
+            ),
+        )
+        self.assertEqual(data['data'], expected)
+        return data
+
+    def test_misc_values_included_resource(self):
+        related = tests.objects.SimpleResource(type='empty')
+        relation = tests.objects.ToOneRel(related,
+                                          meta={'last_updated': 'tomorrow'})
+        resource = tests.objects.SimpleResource(
+            attributes={'basic-attr': 42,
+                        'list-attr': ['a', 'b', 'c'],
+                        'string-attr': 'text'},
+            meta={'version': 24},
+            relationships={'configuration': relation},
+        )
+
+        class Render(flask_restful.Resource):
+            def post(inst):
+                return kt.jsonapi.api.context().created(resource,
+                                                        location=self.location)
+
+        self.api.add_resource(Render, '/')
+
+        resp = self.http_post('/?include=pecan,configuration,pie')
+        self.assertEqual(resp.headers['Content-Type'],
+                         'application/vnd.api+json')
+        self.assertEqual(resp.headers['Location'], self.location)
+        data = resp.json
+        expected = dict(
+            id=resource.id,
+            type=resource.type,
+            attributes={
+                'basic-attr': 42,
+                'list-attr': ['a', 'b', 'c'],
+                'string-attr': 'text',
+            },
+            links=dict(
+                self=resource.links()['self'].href,
+            ),
+            meta=dict(version=24),
+            relationships=dict(
+                configuration=dict(
+                    data=dict(type=related.type, id=related.id),
+                    links=dict(related=related.links()['self'].href),
+                    meta=dict(last_updated='tomorrow'),
+                ),
+            ),
+        )
+        self.assertEqual(data['data'], expected)
+        included = [dict(
+            type=related.type,
+            id=related.id,
+            links=dict(
+                self=related.links()['self'].href,
+            ),
+        )]
+        self.assertEqual(data['included'], included)
+
+    def test_resource_suppress_all_fields(self):
+        related = tests.objects.SimpleResource(type='empty')
+        relation = tests.objects.ToOneRel(related,
+                                          meta={'last_updated': 'tomorrow'})
+        resource = tests.objects.SimpleResource(
+            attributes={'basic-attr': 42,
+                        'list-attr': ['a', 'b', 'c'],
+                        'string-attr': 'text'},
+            meta={'version': 24},
+            relationships={'configuration': relation},
+        )
+
+        class Render(flask_restful.Resource):
+            def post(inst):
+                return kt.jsonapi.api.context().created(resource,
+                                                        location=self.location)
+
+        self.api.add_resource(Render, '/')
+
+        resp = self.http_post('/?fields[%s]=' % resource.type)
+        self.assertEqual(resp.headers['Content-Type'],
+                         'application/vnd.api+json')
+        self.assertEqual(resp.headers['Location'], self.location)
+        data = resp.json
+        expected = dict(
+            id=resource.id,
+            type=resource.type,
+            links=dict(
+                self=resource.links()['self'].href,
+            ),
+            meta=dict(version=24),
+        )
+        self.assertEqual(data['data'], expected)
+        self.assertNotIn('included', data)
+
+
 class CollectionResponseTestCase(tests.utils.JSONAPITestCase):
 
     def setUp(self):
