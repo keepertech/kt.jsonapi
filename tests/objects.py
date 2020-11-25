@@ -129,7 +129,7 @@ class ToOneAddressableRel(ToOneRel):
             if self._related is None:
                 self._self_link = kt.jsonapi.link.Link(
                     '/mycontext/42/relationships/myrelation',
-                    faux=True)
+                    meta=dict(faux=True))
             else:
                 self._self_link = kt.jsonapi.link.Link(
                     links['related'].href + '/relationships/myrelation')

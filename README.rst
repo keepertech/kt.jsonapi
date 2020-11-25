@@ -15,6 +15,12 @@ Release history
 ---------------
 
 
+#. Change constructor signature for ``Link`` object to accept a ``meta``
+   parameter instead of assembling keyword parameters into the
+   dictionary for arbitrary metadata.  This will allow additional future
+   flexibility for parameters with more specific interpretation.
+
+
 1.1.0 (2020-10-27)
 ~~~~~~~~~~~~~~~~~~
 

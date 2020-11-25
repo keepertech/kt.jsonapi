@@ -225,7 +225,7 @@ class ResourceSerializerTestCase(tests.utils.JSONAPITestCase):
             def links(self):
                 links = super(ExtendedLinkResource, self).links()
                 links['self'] = kt.jsonapi.link.Link(
-                    href=links['self'].href, cost=42)
+                    href=links['self'].href, meta=dict(cost=42))
                 return links
 
         resource = ExtendedLinkResource(id='seven')

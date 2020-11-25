@@ -24,10 +24,10 @@ class Link:
 
     """
 
-    def __init__(self, href, **meta):
+    def __init__(self, href, meta=None):
         """Initialize link with href and optional metadata."""
         self.href = href
-        self._meta = meta
+        self._meta = meta or {}
 
     def meta(self):
         return dict(self._meta)
