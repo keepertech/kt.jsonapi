@@ -90,7 +90,7 @@ class Context(object):
     _field_name = kt.jsonapi.interfaces.MemberName()
     _type_name = kt.jsonapi.interfaces.TypeName()
 
-    def __init__(self, request):
+    def __init__(self, app, request):
         """Initialize information needed from the request.
 
         All information is captured from the request up front, instead
@@ -107,7 +107,7 @@ class Context(object):
         # response information
         self.included = []
         self._included_idents = set()
-        self._json_encoder = flask.current_app.json_encoder
+        self._json_encoder = app.json_encoder
         self._relstack = []
 
     def _extract_query_string(self, request):
@@ -374,6 +374,7 @@ def context():
     try:
         ctx = flask.g.__jsonapi_context
     except AttributeError:
-        ctx = Context(flask.request)
+        ctx = Context(flask.current_app._get_current_object(),
+                      flask.request._get_current_object())
         flask.g.__jsonapi_context = ctx
     return ctx

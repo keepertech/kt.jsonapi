@@ -19,7 +19,9 @@ import tests.utils
 class ContextClassTestCase(tests.utils.JSONAPITestCase):
 
     def get_context(self):
-        return kt.jsonapi.api.Context(flask.request)
+        return kt.jsonapi.api.Context(
+            flask.current_app._get_current_object(),
+            flask.request._get_current_object())
 
     def test_no_query_string(self):
         with self.request_context('/'):

@@ -15,6 +15,12 @@ Release history
 ---------------
 
 
+#. Change constructor for ``Context`` object to accept both the Flask
+   application and request objects, and update call sites to de-proxy
+   those before passing them in.  This (slightly) improves the
+   resilience of the constructed context to be less dependent on the
+   source thread.
+
 #. Change constructor signature for ``Link`` object to accept a ``meta``
    parameter instead of assembling keyword parameters into the
    dictionary for arbitrary metadata.  This will allow additional future
