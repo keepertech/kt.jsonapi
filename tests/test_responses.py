@@ -311,7 +311,7 @@ class RelationshipResponseTestCase(tests.utils.JSONAPITestCase):
             ),
             links=dict(
                 related='/api/baggage',
-                self='/',
+                self='/?filter=something',
             ),
         )
         self.assertEqual(data, expected)
@@ -353,7 +353,7 @@ class RelationshipResponseTestCase(tests.utils.JSONAPITestCase):
             related_link=kt.jsonapi.link.Link('/api/baggage'),
             self_link=kt.jsonapi.link.Link('/'),
         )
-        resp = self.http_get('/?page[start]=10&page[limit]=10', status=None)
+        resp = self.http_get('/?page[start]=10&page[limit]=10')
         data = resp.json
         self.assertEqual(resp.headers['Content-Type'],
                          'application/vnd.api+json')
@@ -368,7 +368,7 @@ class RelationshipResponseTestCase(tests.utils.JSONAPITestCase):
             ),
             links=dict(
                 related='/api/baggage',
-                self='/',
+                self='/?page[start]=10&page[limit]=10',
             ),
         )
         self.assertEqual(data, expected)
@@ -398,7 +398,7 @@ class RelationshipResponseTestCase(tests.utils.JSONAPITestCase):
             ),
             links=dict(
                 related='/api/baggage',
-                self='/',
+                self='/?sort=somefield',
             ),
         )
         self.assertEqual(data, expected)
@@ -606,6 +606,28 @@ class ResourceResponseTestCase(tests.utils.JSONAPITestCase):
             ),
         )]
         self.assertEqual(data['included'], included)
+
+    def test_resource_with_app_query_params(self):
+        resource = tests.objects.SimpleResource(
+            attributes={'basic': 42,
+                        'string': 'text'},
+            meta={'version': 24},
+        )
+
+        class Render(flask_restful.Resource):
+            def get(self):
+                return kt.jsonapi.api.context().resource(resource)
+
+        self.api.add_resource(Render, '/')
+
+        resp = self.http_get('/?beta=frob&alfa=24')
+        body = resp.json
+        self.assertEqual(
+            body['links'],
+            dict(
+                self=f'/baggage/{resource.id}?beta=frob&alfa=24',
+            ),
+        )
 
     def test_resource_suppress_all_fields(self):
         related = tests.objects.SimpleResource(type='empty')
@@ -856,6 +878,39 @@ class CollectionResponseTestCase(tests.utils.JSONAPITestCase):
         self.assertEqual(data, dict(data=[],
                                     links=dict(self='/')))
 
+    def test_empty_with_query_params(self):
+        self.collection = tests.objects.SimpleCollection()
+        orig_links = self.collection.links
+
+        def faux_links():
+            links = orig_links()
+            for k, v in links.items():
+                v.meta = lambda: dict(faux=True, link_name=k)
+            return links
+
+        self.collection.links = faux_links
+
+        resp = self.http_get('/?a=1&b=2&a=3', status=None)
+        data = resp.json
+        self.assertEqual(resp.headers['Content-Type'],
+                         'application/vnd.api+json')
+
+        self.assertEqual(
+            data,
+            dict(
+                data=[],
+                links=dict(
+                    self=dict(
+                        href='/?a=1&b=2&a=3',
+                        meta=dict(
+                            faux=True,
+                            link_name='self',
+                        ),
+                    ),
+                ),
+            ),
+        )
+
     def test_empty_with_meta(self):
         self.collection = tests.objects.SimpleCollection(
             meta=dict(azumith=65.5, altitude=10356))
@@ -969,7 +1024,7 @@ class CollectionResponseTestCase(tests.utils.JSONAPITestCase):
         d2 = kt.jsonapi.serializers.resource(empty_context, self.r2)
         expected = dict(
             data=[d1, d2],
-            links=dict(self='/'),
+            links=dict(self='/?filter=something'),
             meta=dict(filter='something'),
         )
         self.assertEqual(data, expected)
@@ -1021,7 +1076,7 @@ class CollectionResponseTestCase(tests.utils.JSONAPITestCase):
         d2 = kt.jsonapi.serializers.resource(empty_context, self.r2)
         expected = dict(
             data=[d1, d2],
-            links=dict(self='/'),
+            links=dict(self='/?page[limit]=15&page[start]=7'),
             meta=dict(page=dict(limit='15', start='7')),
         )
         self.assertEqual(data, expected)
@@ -1073,7 +1128,7 @@ class CollectionResponseTestCase(tests.utils.JSONAPITestCase):
         d2 = kt.jsonapi.serializers.resource(empty_context, self.r2)
         expected = dict(
             data=[d1, d2],
-            links=dict(self='/'),
+            links=dict(self='/?sort=field0,-field1'),
             meta=dict(sort='field0,-field1')
         )
         self.assertEqual(data, expected)
@@ -1102,7 +1157,10 @@ class CollectionResponseTestCase(tests.utils.JSONAPITestCase):
         d2 = kt.jsonapi.serializers.resource(empty_context, self.r2)
         expected = dict(
             data=[d1, d2],
-            links=dict(self='/'),
+            links=dict(
+                self=('/?sort=field0,-field1&filter=something'
+                      '&page[limit]=15&page[start]=7'),
+            ),
             meta=dict(
                 filter='something',
                 page=dict(limit='15', start='7'),
@@ -1126,7 +1184,7 @@ class CollectionResponseTestCase(tests.utils.JSONAPITestCase):
             thing=tests.objects.ToOneRel(r3, meta=dict(n=1)),
         )
 
-        resp = self.http_get('/?include=thing&fields[shared]=x')
+        resp = self.http_get('/?include=thing&fields[shared]=x,q')
         with self.request_context('/?fields[shared]=x'):
             context = kt.jsonapi.api.context()
         d1 = kt.jsonapi.serializers.resource(context, self.r1)
@@ -1135,7 +1193,7 @@ class CollectionResponseTestCase(tests.utils.JSONAPITestCase):
         expected = dict(
             data=[d1, d2],
             included=[d3],
-            links=dict(self='/'),
+            links=dict(self='/?include=thing&fields[shared]=x,q'),
         )
         self.assertEqual(resp.json, expected)
 
@@ -1233,7 +1291,7 @@ class CollectionResponseTestCase(tests.utils.JSONAPITestCase):
                 ),
             ],
             links=dict(
-                self='/',
+                self='/?include=things&page[limit]=10',
             ),
             meta=dict(
                 page=dict(

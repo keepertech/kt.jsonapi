@@ -76,6 +76,17 @@ def _ismap(ob):
     return isinstance(ob, dict)
 
 
+class QueryParameter(object):
+
+    __slots__ = 'key', 'value', 'aspect'
+
+    def __init__(self, key, value, aspect=None):
+        super(QueryParameter, self).__init__()
+        self.key = key
+        self.value = value
+        self.aspect = aspect
+
+
 class Context(object):
     """Request context containing JSON:API-specific information.
 
@@ -116,11 +127,14 @@ class Context(object):
         return request.query_string.decode('utf-8')
 
     def _parse_query_string(self, query_string):
-        input = urllib.parse.parse_qs(query_string, keep_blank_values=True)
+        qparams = []
         self._query = dict()
-        for key, values in input.items():
+        for key, value in urllib.parse.parse_qsl(query_string,
+                                                 keep_blank_values=True):
             topname, _, _ = key.partition('[')
-            if topname not in self._query_parts:
+            aspect = topname if topname in self._query_parts else None
+            qparams.append(QueryParameter(key, value, aspect))
+            if not aspect:
                 continue
             obnames, field = _split_key(key)
 
@@ -145,9 +159,13 @@ class Context(object):
                     f'{key!r} is already a container, and cannot be used as'
                     f' a value field',
                     key=key)
-            if topname in ('filter', 'page', 'sort'):
-                values, = values
-            ob[field] = values
+            if field in ob:
+                raise kt.jsonapi.interfaces.InvalidQueryKeyUsage(
+                    f'query string key {key!r} may have only one value',
+                    key=key)
+            ob[field] = value
+
+        self._qparams = tuple(qparams)
 
         # Should validate all type names and field names using the
         # appropriate schema fields.
@@ -167,12 +185,8 @@ class Context(object):
                     f' must not contain nested containers',
                     key=key,
                     value=tfields)
-            if len(tfields) != 1:
-                raise kt.jsonapi.interfaces.InvalidQueryKeyUsage(
-                    f'query string key {key!r} may have only one value',
-                    key=key)
-            if tfields[0]:
-                tfields = tfields[0].split(',')
+            if tfields:
+                tfields = tfields.split(',')
                 for tfield in tfields:
                     # validate field name
                     self._field_name.validate(tfield)
@@ -188,11 +202,7 @@ class Context(object):
                     f' must not contain nested containers',
                     key=key,
                     value=self._query['include'])
-            if len(self._query['include']) != 1:
-                raise kt.jsonapi.interfaces.InvalidQueryKeyUsage(
-                    f'query string key {key!r} may have only one value',
-                    key=key)
-            for part in self._query['include'][0].split(','):
+            for part in self._query['include'].split(','):
                 relnames = part.split('.')
                 relpath = []
                 for relname in relnames:
@@ -237,6 +247,14 @@ class Context(object):
         **Content-Type** header is provided, it will be used instead of
         the default value for JSON:API responses.
 
+        The **links** member of the response payload will include a
+        **self** link based on the **self** link for the collection, with
+        query parameters copied from the request.  Pagination links
+        provided by the :meth:`~kt.jsonapi.interfaces.ILinksProvider.links`
+        method for the collection will be augmented based on the query
+        parameters of the request with the incoming pagination
+        parameters stripped out.
+
         """
         collection = kt.jsonapi.interfaces.ICollection(collection)
         self._prepare_collection(collection)
@@ -258,8 +276,31 @@ class Context(object):
         if meta:
             r['meta'] = meta
         if links:
+            self._apply_query_params(links)
             r['links'] = links
         return self._response(r, headers=headers)
+
+    def _apply_query_params(self, links):
+        for lname in ('self', 'first', 'next', 'prev', 'last'):
+            if lname not in links:
+                continue
+            link = links[lname]
+            if lname == 'self':
+                items = self._query_params()
+            else:
+                items = self._query_params(excluding={'page'})
+            if not items:
+                continue
+            items = [f'{qp.key}={qp.value}' for qp in items]
+            items = '&'.join(items)
+            if isinstance(link, str):
+                # just a string, not an object
+                qp = '&' if '?' in link else '?'
+                links[lname] = f'{link}{qp}{items}'
+            else:
+                link = links[lname]['href']
+                qp = '&' if '?' in link else '?'
+                links[lname]['href'] = f'{link}{qp}{items}'
 
     def _prepare_collection(self, collection):
         self._collection_prop(
@@ -276,10 +317,21 @@ class Context(object):
         if iface.providedBy(collection):
             if key in self._query:
                 method = getattr(collection, method)
-                method(self._query[key])
+                qdata = self._query[key]
+                method(qdata)
         elif key in self._query:
             raise werkzeug.exceptions.BadRequest(
                 f'{verb} is not supported by collection')
+
+    def _disallow_collection_params(self, what):
+        for verb in ('filter', 'sort', 'page'):
+            if verb in self._query:
+                raise werkzeug.exceptions.BadRequest(
+                    f'{verb} is not supported for {what}')
+
+    def _query_params(self, excluding=frozenset()):
+        return [qparam for qparam in self._qparams
+                if qparam.aspect not in excluding]
 
     def relationship(self, relationship, headers=None):
         """Generate response containing a relationship as primary data.
@@ -288,6 +340,14 @@ class Context(object):
         additional headers that should be returned in the request.  If a
         **Content-Type** header is provided, it will be used instead of
         the default value for JSON:API responses.
+
+        The **links** member of the response payload will include
+        augmented **self** and pagination links, as provided by the
+        :meth:`~kt.jsonapi.interfaces.ILinksProvider.links` method for
+        the relation, with query parameters copied from the request.
+        Pagination links will be augmented based on the query parameters
+        from the request with the incoming pagination parameters stripped
+        out.
 
         """
         if self.fields or self.relpaths:
@@ -299,10 +359,7 @@ class Context(object):
         if rel is None:
             # Reject collection parameters; order should match that of
             # _prepare_collection.
-            for verb in ('filter', 'sort', 'page'):
-                if verb in self._query:
-                    raise werkzeug.exceptions.BadRequest(
-                        f'{verb} is not supported for to-one relationship')
+            self._disallow_collection_params('to-one relationship')
             body = kt.jsonapi.serializers.relationship(self, relationship)
         else:
             # to-many, so collection parameters are applicable.
@@ -313,9 +370,14 @@ class Context(object):
             data = [dict(type=resource.type, id=resource.id)
                     for resource in resources]
             # We're doing this mostly to pick up pagination links:
-            body = kt.jsonapi.serializers._relationship_body_except_data(
-                rel, collection)
-            body['data'] = data
+            body = dict(
+                kt.jsonapi.serializers._relationship_body_except_data(
+                    rel, collection),
+                data=data,
+            )
+        if body.get('links'):
+            self._apply_query_params(body['links'])
+
         return self._response(body, headers=headers)
 
     def resource(self, resource, headers=None):
@@ -326,9 +388,17 @@ class Context(object):
         **Content-Type** header is provided, it will be used instead of
         the default value for JSON:API responses.
 
+        The **links** member of the response payload will include a
+        **self** link based on the **self** link for the resource, with
+        query parameters copied from the request.
+
         """
+        self._disallow_collection_params('resource')
         data = kt.jsonapi.serializers.resource(self, resource)
+        link = self._resource_self_link(data)
         data = dict(data=data)
+        if link:
+            data['links'] = dict(self=link)
         if self.included or self.relpaths:
             data['included'] = self.included
         return self._response(data, headers=headers)
@@ -341,12 +411,20 @@ class Context(object):
         **Content-Type** header is provided, it will be used instead of
         the default value for JSON:API responses.
 
+        The **links** member of the response payload will include a
+        **self** link based on the **self** link for the resource, with
+        query parameters copied from the request.
+
         The response will carry a 201 status code to indicate that the
         resource was successfully created.
 
         """
+        self._disallow_collection_params('resource')
         data = kt.jsonapi.serializers.resource(self, resource)
+        link = self._resource_self_link(data)
         data = dict(data=data)
+        if link:
+            data['links'] = dict(self=link)
         if self.included or self.relpaths:
             data['included'] = self.included
         hdrs = flask.app.Headers()
@@ -355,6 +433,19 @@ class Context(object):
         if location:
             hdrs['Location'] = location
         return self._response(data, headers=hdrs, status=201)
+
+    def _resource_self_link(self, data):
+        link = None
+        if 'links' in data and 'self' in data['links']:
+            link = data['links']['self']
+            if isinstance(link, dict):
+                link = link['href']
+            items = self._query_params()
+            if items:
+                items = [f'{qp.key}={qp.value}' for qp in items]
+                qp = '&' if '?' in link else '?'
+                link = f'{link}{qp}{"&".join(items)}'
+        return link
 
     def _response(self, body, headers=None, status=200):
         data = json.dumps(body, cls=self._json_encoder).encode('utf-8')

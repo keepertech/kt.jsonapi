@@ -14,6 +14,11 @@ The current implementation works with the Flask_ web framework.
 Release history
 ---------------
 
+#. Manage query parameters for top-level **self** and pagination links.
+   This can be a significant change for applications that deal with
+   query parameters themselves.
+   https://github.com/json-api/json-api/issues/1502
+   https://kt-git.keepertech.com/DevTools/kt.jsonapi/issues/8
 
 #. Change constructor for ``Context`` object to accept both the Flask
    application and request objects, and update call sites to de-proxy
