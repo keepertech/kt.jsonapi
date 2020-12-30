@@ -42,8 +42,15 @@ def _check_name(name, key):
 
 
 def _split_key(key):
+    #
     # key should look something like 'name0[name1][name2]';
-    # pick it apart into a sequence of names: ['name0', 'name1', 'name2']
+    # pick it apart into a sequence of names and a final field:
+    #   ==> ('name0', 'name1'), 'name2'
+    #
+    # A simple key that contains no [...] parts generates only the
+    # final field and an empty prefix sequence:
+    #   ==> (), 'name0'
+    #
     if '[' in key:
         ndx = key.index('[')
         name = key[:ndx]
@@ -77,13 +84,8 @@ class Context(object):
 
     """
 
-    # Needs to deal with fields, include, maybe pagination.
-
     # JSON:API-defined query parameters, some of which can be 'deep'
     # structures.
-    #
-    # What a request might reasonably need will generally depend on the
-    # method, and we probably want more context when validating values.
     #
     _query_parts = 'fields', 'filter', 'include', 'page', 'sort'
 
