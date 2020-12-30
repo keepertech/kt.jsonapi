@@ -818,6 +818,53 @@ class CreatedResponseTestCase(ResourceResponseTestCase):
         self.assertEqual(data['data'], expected)
         self.assertNotIn('included', data)
 
+    def test_created_self_link_meta(self):
+        resource = tests.objects.SimpleResource(
+            attributes={'basic': 42,
+                        'string': 'text'},
+        )
+        orig_links = resource.links
+
+        def faux_links():
+            links = orig_links()
+            return dict(
+                self=kt.jsonapi.link.Link(
+                    href=links['self'].href,
+                    meta=dict(extra=42),
+                )
+            )
+
+        class Render(flask_restful.Resource):
+            def post(inst):
+                resource.links = faux_links
+                return kt.jsonapi.api.context().created(resource)
+
+        self.api.add_resource(Render, '/')
+
+        resp = self.http_post('/?appParam=seven')
+        self.assertEqual(resp.headers['Content-Type'],
+                         'application/vnd.api+json')
+        body = resp.json
+        self.assertEqual(body['links']['self'],
+                         f'/{resource.type}/{resource.id}?appParam=seven')
+
+    def test_created_without_location(self):
+        resource = tests.objects.SimpleResource(
+            attributes={'basic': 42,
+                        'string': 'text'},
+        )
+
+        class Render(flask_restful.Resource):
+            def post(inst):
+                return kt.jsonapi.api.context().created(resource)
+
+        self.api.add_resource(Render, '/')
+
+        resp = self.http_post('/')
+        self.assertEqual(resp.headers['Content-Type'],
+                         'application/vnd.api+json')
+        self.assertNotIn('Location', resp.headers)
+
 
 class CollectionResponseTestCase(tests.utils.JSONAPITestCase):
 

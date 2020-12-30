@@ -399,6 +399,7 @@ class Context(object):
         data = dict(data=data)
         if link:
             data['links'] = dict(self=link)
+            self._apply_query_params(data['links'])
         if self.included or self.relpaths:
             data['included'] = self.included
         return self._response(data, headers=headers)
@@ -425,6 +426,7 @@ class Context(object):
         data = dict(data=data)
         if link:
             data['links'] = dict(self=link)
+            self._apply_query_params(data['links'])
         if self.included or self.relpaths:
             data['included'] = self.included
         hdrs = flask.app.Headers()
@@ -440,11 +442,6 @@ class Context(object):
             link = data['links']['self']
             if isinstance(link, dict):
                 link = link['href']
-            items = self._query_params()
-            if items:
-                items = [f'{qp.key}={qp.value}' for qp in items]
-                qp = '&' if '?' in link else '?'
-                link = f'{link}{qp}{"&".join(items)}'
         return link
 
     def _response(self, body, headers=None, status=200):
