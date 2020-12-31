@@ -50,6 +50,14 @@ class ContextClassTestCase(tests.utils.JSONAPITestCase):
         self.assertEqual(rc.fields['def'], {'e'})
         self.assertEqual(rc.relpaths, set())
 
+    def test_include_empty(self):
+        with self.request_context('/?include='):
+            rc = self.get_context()
+        self.assertIsInstance(rc.fields, dict)
+        self.assertIsInstance(rc.relpaths, set)
+        self.assertEqual(rc.fields, {})
+        self.assertEqual(rc.relpaths, set())
+
     def test_include_simple(self):
         with self.request_context('/?include=abc,def.ghi'):
             rc = self.get_context()

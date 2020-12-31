@@ -204,7 +204,8 @@ class Context(object):
                     f' must not contain nested containers',
                     key=key,
                     value=include)
-            for part in include.split(','):
+            includes = include.split(',') if include else []
+            for part in includes:
                 self._relationship_path.validate(part)
                 relnames = part.split('.')
                 relpath = []
@@ -274,7 +275,7 @@ class Context(object):
         links = kt.jsonapi.serializers._collection_links(collection)
         meta = dict(collection.meta())
         r = dict(data=data)
-        if self.included or self.relpaths:
+        if 'include' in self._query:
             r['included'] = self.included
         if meta:
             r['meta'] = meta
@@ -353,7 +354,7 @@ class Context(object):
         out.
 
         """
-        if self.fields or self.relpaths:
+        if self.fields or 'include' in self._query:
             raise werkzeug.exceptions.BadRequest(
                 'cannot specify sparse field sets or relationships'
                 ' to include for a relationship')
@@ -403,7 +404,7 @@ class Context(object):
         if link:
             data['links'] = dict(self=link)
             self._apply_query_params(data['links'])
-        if self.included or self.relpaths:
+        if 'include' in self._query:
             data['included'] = self.included
         return self._response(data, headers=headers)
 
@@ -430,7 +431,7 @@ class Context(object):
         if link:
             data['links'] = dict(self=link)
             self._apply_query_params(data['links'])
-        if self.included or self.relpaths:
+        if 'include' in self._query:
             data['included'] = self.included
         hdrs = flask.app.Headers()
         if headers is not None:

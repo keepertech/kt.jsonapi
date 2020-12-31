@@ -14,6 +14,11 @@ The current implementation works with the Flask_ web framework.
 Release history
 ---------------
 
+#. Treat an empty ``include`` query parameter as an empty list of
+   relationship paths.  This was previously silently treated as an empty
+   relationship path, though invalid.
+   https://github.com/json-api/json-api/issues/1530
+
 
 1.2.0 (2021-01-04)
 ~~~~~~~~~~~~~~~~~~
