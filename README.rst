@@ -20,6 +20,10 @@ Release history
    https://github.com/json-api/json-api/issues/1502
    https://kt-git.keepertech.com/DevTools/kt.jsonapi/issues/8
 
+#. Fix generation of links for a relationship to correctly deal with
+   collection-oriented query parameters (``filter``, ``page``, ``sort``).
+   https://kt-git.keepertech.com/DevTools/kt.jsonapi/issues/10
+
 #. Validate relationship paths passed to the ``include`` query parameter.
 
 #. Change constructor for ``Context`` object to accept both the Flask

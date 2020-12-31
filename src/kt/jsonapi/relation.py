@@ -103,7 +103,10 @@ class ToOneRelationship(RelationshipBase):
         included.
 
         If this relationship is indirect or non-empty, a ``related``
-        link will be included.
+        link will be included.  If indirect, the ``related`` link will
+        be based on the *source* and *name* constructor arguments, with
+        the conventional form ``{source}/{name}``, otherwise it will be
+        the ``self`` link of the target.
 
         """
         source_href = self.source.links()['self'].href
@@ -155,7 +158,15 @@ class ToManyRelationship(RelationshipBase):
         link of the relationship's collection.
 
         If this relationship is addressable, a ``self`` link will be
-        included.
+        included based on the ``self`` link of *source* and *name*
+        parameters to the constructor, with the conventional form
+        ``{source}/relationships/{name}``.
+
+        If the *collection* provides pagination links and the
+        relationship is addressable, pagination links are also produced
+        for the relationship.  The links are based on the ``self`` link
+        of the relationship with query strings copied from the
+        like-named pagination links of the collection.
 
         """
         links = dict(
@@ -163,6 +174,25 @@ class ToManyRelationship(RelationshipBase):
         )
         if self.addressable:
             source_href = self.source.links()['self'].href
-            links['self'] = kt.jsonapi.link.Link(
-                f'{source_href}/relationships/{self.name}')
+            rhref = f'{source_href}/relationships/{self.name}'
+            links['self'] = kt.jsonapi.link.Link(rhref)
+
+            # If there are pagination links for the collection, transfer
+            # any query parameters to the corresponding links for the
+            # relationship.
+            #
+            clinks = self.collection().links()
+            qsep = '&' if '?' in rhref else '?'
+            for lname in ('first', 'last', 'prev', 'next'):
+                if lname not in clinks:
+                    continue
+                clink = clinks[lname]
+                cpath, _, cqs = clink.href.partition('?')
+                if cqs:
+                    phref = f'{rhref}{qsep}{cqs}'
+                else:
+                    phref = rhref
+                # We're just assuming any meta does not carry over.
+                # Override or use a separate implementation if not so.
+                links[lname] = kt.jsonapi.link.Link(phref)
         return links

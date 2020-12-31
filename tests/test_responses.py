@@ -19,6 +19,7 @@ import kt.jsonapi.link
 import kt.jsonapi.serializers
 
 import tests.objects
+import tests.test_relation
 import tests.utils
 
 
@@ -460,6 +461,29 @@ class RelationshipResponseTestCase(tests.utils.JSONAPITestCase):
         self.assertEqual(
             str(cm.exception),
             'relationship value does not provide a concrete relationship type')
+
+    def test_adapts_collection_paging_links(self):
+        source = tests.objects.SimpleResource()
+        collection = tests.test_relation.FauxPagableCollection(
+            links=dict(self=kt.jsonapi.link.Link('/some-things')))
+        self.relation = kt.jsonapi.relation.ToManyRelationship(
+            source, collection, addressable=True, name='things')
+        source_link = source.links()['self'].href
+
+        resp = self.http_get('/')
+        links = resp.json['links']
+        self.assertEqual(resp.headers['Content-Type'],
+                         'application/vnd.api+json')
+
+        link = links['first']
+        self.assertIsInstance(link, str)
+        self.assertEqual(link, links['self'])
+
+        link = links['next']
+        self.assertIsInstance(link, str)
+        self.assertEqual(
+            link,
+            f'{source_link}/relationships/things?page[start]=15')
 
 
 class ResourceResponseTestCase(tests.utils.JSONAPITestCase):

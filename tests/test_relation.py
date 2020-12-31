@@ -204,8 +204,43 @@ class ToOneRelationshipTestCase(AdaptersHelper,
         self.assertEqual(links['self'].href,
                          source_href + '/relationships/rel')
 
+
+@zope.interface.implementer(kt.jsonapi.interfaces.IPagableCollection)
+class FauxPagableCollection(tests.objects.SimpleCollection):
+
+    def links(self):
+        links = super(FauxPagableCollection, self).links()
+        href = links['self'].href
+        meta = dict(faux=True)
+        qsep = '&' if '?' in href else '?'
+        links['first'] = kt.jsonapi.link.Link(
+            href, meta=meta)
+        links['next'] = kt.jsonapi.link.Link(
+            f'{href}{qsep}page[start]=15', meta=meta)
+        return links
+
+
 class ToManyRelationshipTestCase(AdaptersHelper,
                                  tests.utils.JSONAPITestCase):
+
+    def test_relation_adapts_collection_paging_links(self):
+        source = tests.objects.SimpleResource()
+        collection = FauxPagableCollection(
+            links=dict(self=kt.jsonapi.link.Link('/some-things')))
+        relation = kt.jsonapi.relation.ToManyRelationship(
+            source, collection, addressable=True, name='things')
+        links = relation.links()
+        source_link = source.links()['self'].href
+
+        link = links['first']
+        self.assertEqual(link.href, links['self'].href)
+        self.assertEqual(link.meta(), {})
+
+        link = links['next']
+        self.assertEqual(
+            link.href,
+            f'{source_link}/relationships/things?page[start]=15')
+        self.assertEqual(link.meta(), {})
 
     def test_error_addressable_requires_name(self):
         source = tests.objects.SimpleResource()
