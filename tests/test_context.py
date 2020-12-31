@@ -58,6 +58,29 @@ class ContextClassTestCase(tests.utils.JSONAPITestCase):
         self.assertEqual(rc.fields, {})
         self.assertEqual(rc.relpaths, {'abc', 'def', 'def.ghi'})
 
+    def test_include_invalid_simple(self):
+        with self.assertRaises(
+                kt.jsonapi.interfaces.InvalidRelationshipPath) as cm:
+            with self.request_context('/?include=def ghi'):
+                self.get_context()
+        self.assertEqual(cm.exception.value, 'def ghi')
+
+    def test_include_invalid_relpath_1(self):
+        with self.assertRaises(
+                kt.jsonapi.interfaces.InvalidRelationshipPath) as cm:
+            with self.request_context('/?include=abc.def ghi'):
+                self.get_context()
+        self.assertEqual(cm.exception.field, 'def ghi')
+        self.assertEqual(cm.exception.value, 'abc.def ghi')
+
+    def test_include_invalid_relpath_2(self):
+        with self.assertRaises(
+                kt.jsonapi.interfaces.InvalidRelationshipPath) as cm:
+            with self.request_context('/?include=alternate,abc.def-ghi,'):
+                self.get_context()
+        self.assertEqual(cm.exception.field, '')
+        self.assertEqual(cm.exception.value, '')
+
     def test_fields_include_together(self):
         with self.request_context(
                 '/?fields[abc]=a,b&include=abc,def.ghi&fields[def]=e'):

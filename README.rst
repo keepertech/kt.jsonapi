@@ -20,6 +20,8 @@ Release history
    https://github.com/json-api/json-api/issues/1502
    https://kt-git.keepertech.com/DevTools/kt.jsonapi/issues/8
 
+#. Validate relationship paths passed to the ``include`` query parameter.
+
 #. Change constructor for ``Context`` object to accept both the Flask
    application and request objects, and update call sites to de-proxy
    those before passing them in.  This (slightly) improves the

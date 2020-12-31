@@ -34,6 +34,11 @@ class InvalidMemberName(_InvalidName):
     """Member name is invalid according to JSON:API."""
 
 
+class InvalidRelationshipPath(_InvalidName):
+    """Relationship path includes invalid member name according to JSON:API.
+    """
+
+
 class InvalidTypeName(_InvalidName):
     """Type name is invalid according to JSON:API."""
 
@@ -85,6 +90,31 @@ class MemberName(_Name):
     """
 
     _exception = InvalidMemberName
+
+
+class RelationshipPath(_Name):
+    """Dotted sequence of member names, as defined by JSON:API.
+
+    Allowed member names are `constrained by the specification
+    <https://jsonapi.org/format/#document-member-names>`__.
+    This definition applies to the names of attributes and relationships.
+
+    Raises :exc:`InvalidRelationshipPath` when constraints are not satisfied.
+
+    """
+
+    _exception = InvalidRelationshipPath
+
+    def constraint(self, value):
+        try:
+            for part in value.split('.'):
+                super(RelationshipPath, self).constraint(part)
+        except InvalidRelationshipPath as e:
+            e.field = part
+            e.value = value
+            raise
+        else:
+            return True
 
 
 class TypeName(_Name):

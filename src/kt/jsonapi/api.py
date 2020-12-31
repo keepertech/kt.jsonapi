@@ -101,6 +101,7 @@ class Context(object):
     _query_parts = 'fields', 'filter', 'include', 'page', 'sort'
 
     _field_name = kt.jsonapi.interfaces.MemberName()
+    _relationship_path = kt.jsonapi.interfaces.RelationshipPath()
     _type_name = kt.jsonapi.interfaces.TypeName()
 
     def __init__(self, app, request):
@@ -196,13 +197,15 @@ class Context(object):
 
         if 'include' in self._query:
             key = 'include'
-            if isinstance(self._query['include'], dict):
+            include = self._query[key]
+            if isinstance(include, dict):
                 raise kt.jsonapi.interfaces.InvalidQueryKeyValue(
                     f'value for query string key {key!r}'
                     f' must not contain nested containers',
                     key=key,
-                    value=self._query['include'])
-            for part in self._query['include'].split(','):
+                    value=include)
+            for part in include.split(','):
+                self._relationship_path.validate(part)
                 relnames = part.split('.')
                 relpath = []
                 for relname in relnames:

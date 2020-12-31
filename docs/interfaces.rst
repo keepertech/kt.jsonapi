@@ -10,6 +10,7 @@ Exceptions
 
 .. autoexception:: InvalidMemberName
 .. autoexception:: InvalidTypeName
+.. autoexception:: InvalidRelationshipPath
 
 .. autoexception:: InvalidQueryKey
     :no-special-members:
@@ -61,6 +62,7 @@ JSON:API concepts.
 
 .. autoclass:: MemberName
 .. autoclass:: TypeName
+.. autoclass:: RelationshipPath
 .. autoclass:: URL
     :no-special-members:
 
