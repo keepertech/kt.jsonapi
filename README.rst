@@ -14,6 +14,10 @@ The current implementation works with the Flask_ web framework.
 Release history
 ---------------
 
+
+1.2.0 (2021-01-04)
+~~~~~~~~~~~~~~~~~~
+
 #. Manage query parameters for top-level **self** and pagination links.
    This can be a significant change for applications that deal with
    query parameters themselves.
