@@ -74,7 +74,7 @@ class ToOneRelationship(RelationshipBase):
         :param target:  Resource object related to the source; may be ``None``.
         :param name:
             Name of the relationship.
-            Required if either ``indirect`` or ``addressable`` is true.
+            Required if either *indirect* or *addressable* is true.
         :param addressable:
             Indicates whether the relationship itself is addressable via URL.
         :param indirect:
@@ -140,7 +140,7 @@ class ToManyRelationship(RelationshipBase):
         :param collection:  Collection of related resources.
         :param name:
             Name of the relationship.
-            Required if either ``indirect`` or ``addressable`` is true.
+            Required if *addressable* is true.
         :param addressable:
             Indicates whether the relationship itself is addressable via URL.
         """

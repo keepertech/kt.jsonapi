@@ -239,7 +239,8 @@ class IFilterableCollection(ICollection):
         requested.
 
         If filtering is requested, this will be called *before* the
-        ``resources`` method is called.
+        :meth:`~kt.jsonapi.interfaces.ICollection.resources` method is
+        called.
 
         Filtering parameters will be applied before sorting parameters
         (if applicable) or pagination parameters (if applicable).
@@ -259,7 +260,8 @@ class ISortableCollection(ICollection):
         the collection should behave as if no sorting were requested.
 
         If sorting is requested, this will be called *before* the
-        ``resources`` method is called.
+        :meth:`~kt.jsonapi.interfaces.ICollection.resources` method is
+        called.
 
         Sorting parameters will be applied after filtering parameters
         (if applicable) and before pagination (if applicable).
@@ -273,7 +275,8 @@ class IPagableCollection(ICollection):
         """Apply pagination parameters from the request.
 
         This is expected to affect the results returned by the
-        ``resources`` and ``links`` methods.
+        :meth:`~ICollection.resources` and :meth:`~ICollection.links`
+        methods.
 
         If the specific pagination parameters provided are not
         supported, an appropriate ``BadRequest`` exception must be
@@ -284,7 +287,8 @@ class IPagableCollection(ICollection):
         were requested.
 
         If pagination parameters are provided, this will be called
-        *before* the ``resources`` method is called.
+        *before* the :meth:`~kt.jsonapi.interfaces.ICollection.resources`
+        method is called.
 
         Pagination parameters will be applied after filtering parameters
         (if applicable) and sorting parameters (if applicable).
