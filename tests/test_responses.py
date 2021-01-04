@@ -485,6 +485,30 @@ class RelationshipResponseTestCase(tests.utils.JSONAPITestCase):
             link,
             f'{source_link}/relationships/things?page[start]=15')
 
+    def test_adapts_collection_paging_links_forwards_nonpaging(self):
+        source = tests.objects.SimpleResource()
+        collection = tests.test_relation.FauxPagableCollection(
+            links=dict(self=kt.jsonapi.link.Link('/some-things')))
+        self.relation = kt.jsonapi.relation.ToManyRelationship(
+            source, collection, addressable=True, name='things')
+        source_link = source.links()['self'].href
+
+        resp = self.http_get('/?appOption=42')
+        links = resp.json['links']
+        self.assertEqual(resp.headers['Content-Type'],
+                         'application/vnd.api+json')
+
+        link = links['first']
+        self.assertIsInstance(link, str)
+        self.assertEqual(link, links['self'])
+        self.assertIn('appOption=42', link)
+
+        link = links['next']
+        self.assertIsInstance(link, str)
+        self.assertEqual(
+            link,
+            f'{source_link}/relationships/things?page[start]=15&appOption=42')
+
 
 class ResourceResponseTestCase(tests.utils.JSONAPITestCase):
 
