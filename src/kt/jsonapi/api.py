@@ -289,6 +289,8 @@ class Context(object):
             if lname not in links:
                 continue
             link = links[lname]
+            if link is None:
+                continue
             if lname == 'self':
                 items = self._query_params()
             else:

@@ -15,12 +15,24 @@ import werkzeug.exceptions
 import zope.interface
 
 import kt.jsonapi.api
+import kt.jsonapi.interfaces
 import kt.jsonapi.link
 import kt.jsonapi.serializers
 
 import tests.objects
 import tests.test_relation
 import tests.utils
+
+
+@zope.interface.implementer(kt.jsonapi.interfaces.IPagableCollection)
+class SimplePagableCollection(tests.objects.SimpleCollection):
+
+    def links(self):
+        return dict(
+            super(SimplePagableCollection, self).links(),
+            next=None,
+            prev=None,
+        )
 
 
 def create_collection(test, *ifaces):
@@ -1161,13 +1173,15 @@ class CollectionResponseTestCase(tests.utils.JSONAPITestCase):
         self.assertEqual(self.collection.ncalls_set_pagination, 0)
         self.assertEqual(self.collection.ncalls_set_sort, 0)
 
-    def test_pagable_with_content_with_pagination(self):
-        create_collection(
-            self,
-            kt.jsonapi.interfaces.IPagableCollection,
-        )
+    maxDiff = None
 
-        resp = self.http_get('/?page[limit]=15&page[start]=7')
+    def test_pagable_with_content_with_pagination(self):
+        self.r1 = tests.objects.SimpleResource(attributes=dict(simple=True))
+        self.r2 = tests.objects.SimpleResource(attributes=dict(simple=False),
+                                               meta=dict(last=True))
+        self.collection = SimplePagableCollection([self.r1, self.r2])
+
+        resp = self.http_get('/?page[limit]=15&page[start]=7&Extra=42')
 
         data = resp.json
         self.assertEqual(resp.headers['Content-Type'],
@@ -1178,7 +1192,11 @@ class CollectionResponseTestCase(tests.utils.JSONAPITestCase):
         d2 = kt.jsonapi.serializers.resource(empty_context, self.r2)
         expected = dict(
             data=[d1, d2],
-            links=dict(self='/?page[limit]=15&page[start]=7'),
+            links=dict(
+                self='/?page[limit]=15&page[start]=7&Extra=42',
+                next=None,
+                prev=None,
+            ),
             meta=dict(page=dict(limit='15', start='7')),
         )
         self.assertEqual(data, expected)

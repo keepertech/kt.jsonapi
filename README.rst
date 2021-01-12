@@ -14,6 +14,10 @@ The current implementation works with the Flask_ web framework.
 Release history
 ---------------
 
+#. Support pagination links of ``None`` for collections and to-many
+   relationships.
+   https://kt-git.keepertech.com/DevTools/kt.jsonapi/issues/11
+
 #. Treat an empty ``include`` query parameter as an empty list of
    relationship paths.  This was previously silently treated as an empty
    relationship path, though invalid.
