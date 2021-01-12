@@ -5,7 +5,7 @@ JSON:API support library.
 import setuptools
 
 NAME = 'kt.jsonapi'
-VERSION = '1.2.0'
+VERSION = '1.2.1'
 LICENSE = 'file: LICENSE.txt'
 
 packages = [NAME]

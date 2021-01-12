@@ -14,6 +14,10 @@ The current implementation works with the Flask_ web framework.
 Release history
 ---------------
 
+
+1.2.1 (2021-01-12)
+~~~~~~~~~~~~~~~~~~
+
 #. Support pagination links of ``None`` for collections and to-many
    relationships.
    https://kt-git.keepertech.com/DevTools/kt.jsonapi/issues/11
