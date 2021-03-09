@@ -1,4 +1,4 @@
-# (c) 2020.  Keeper Technology LLC.  All Rights Reserved.
+# (c) 2020 - 2021.  Keeper Technology LLC.  All Rights Reserved.
 # Use is subject to license.  Reproduction and distribution is strictly
 # prohibited.
 #
@@ -109,6 +109,7 @@ class ToOneRelationshipTestCase(AdaptersHelper,
         self.assertNotIn('related', links)
         self.assertNotIn('self', links)
         self.assertEqual(dict(relation.meta()), dict())
+        self.assertEqual(relation.includable, True)
 
     def test_empty_indirect_unaddressable(self):
         source = tests.objects.SimpleResource()
@@ -129,6 +130,7 @@ class ToOneRelationshipTestCase(AdaptersHelper,
         )
         self.assertNotIn('self', links)
         self.assertEqual(dict(relation.meta()), dict())
+        self.assertEqual(relation.includable, True)
 
     def test_nonempty_direct_unaddressable(self):
         source = tests.objects.SimpleResource()
@@ -148,6 +150,7 @@ class ToOneRelationshipTestCase(AdaptersHelper,
         )
         self.assertNotIn('self', links)
         self.assertEqual(dict(relation.meta()), dict())
+        self.assertEqual(relation.includable, True)
 
     def test_nonempty_indirect_unaddressable(self):
         source = tests.objects.SimpleResource()
@@ -168,6 +171,7 @@ class ToOneRelationshipTestCase(AdaptersHelper,
         )
         self.assertNotIn('self', links)
         self.assertEqual(dict(relation.meta()), dict())
+        self.assertEqual(relation.includable, True)
 
     def test_addressable(self):
         source = tests.objects.SimpleResource()
@@ -179,6 +183,20 @@ class ToOneRelationshipTestCase(AdaptersHelper,
         source_href = source.links()['self'].href
         self.assertEqual(links['self'].href,
                          source_href + '/relationships/rel')
+        self.assertEqual(relation.includable, True)
+
+    def test_non_includable(self):
+        source = tests.objects.SimpleResource()
+        relation = kt.jsonapi.relation.ToOneRelationship(source, None, 'rel',
+                                                         addressable=True,
+                                                         includable=False)
+        source._relationships['rel'] = relation
+
+        links = dict(relation.links())
+        source_href = source.links()['self'].href
+        self.assertEqual(links['self'].href,
+                         source_href + '/relationships/rel')
+        self.assertEqual(relation.includable, False)
 
     def test_source_needs_adaptation(self):
         source = Thing(attrs=dict(foo='bar'))
@@ -274,6 +292,7 @@ class ToManyRelationshipTestCase(AdaptersHelper,
                          source_href + '/relationships/rel')
         self.assertEqual(dict(relation.meta()), dict())
         self.assertIs(relation.collection(), collection)
+        self.assertEqual(relation.includable, True)
 
     def test_unaddressable(self):
         source = tests.objects.SimpleResource()
@@ -290,3 +309,21 @@ class ToManyRelationshipTestCase(AdaptersHelper,
         self.assertNotIn('self', links)
         self.assertEqual(dict(relation.meta()), dict())
         self.assertIs(relation.collection(), collection)
+        self.assertEqual(relation.includable, True)
+
+    def test_non_includable(self):
+        source = tests.objects.SimpleResource()
+        source_href = source.links()['self'].href
+        collection = tests.objects.SimpleCollection(
+            links=dict(self=kt.jsonapi.link.Link(source_href + '/chillun')))
+        relation = kt.jsonapi.relation.ToManyRelationship(
+            source, collection, 'rel', includable=False)
+        source._relationships['rel'] = relation
+
+        links = dict(relation.links())
+        self.assertEqual(links['related'].href,
+                         source_href + '/chillun')
+        self.assertNotIn('self', links)
+        self.assertEqual(dict(relation.meta()), dict())
+        self.assertIs(relation.collection(), collection)
+        self.assertEqual(relation.includable, False)

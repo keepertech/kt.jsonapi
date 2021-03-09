@@ -1,4 +1,4 @@
-# (c) 2020.  Keeper Technology LLC.  All Rights Reserved.
+# (c) 2020 - 2021.  Keeper Technology LLC.  All Rights Reserved.
 # Use is subject to license.  Reproduction and distribution is strictly
 # prohibited.
 #
@@ -96,6 +96,8 @@ class SimpleCollection(object):
 @zope.interface.implementer(kt.jsonapi.interfaces.IToOneRelationship)
 class ToOneRel(object):
 
+    includable = True
+
     def __init__(self, related, meta={}):
         if related is not None:
             related = kt.jsonapi.interfaces.IResource(related)
@@ -140,6 +142,8 @@ class ToOneAddressableRel(ToOneRel):
 @zope.interface.implementer(kt.jsonapi.interfaces.IToManyRelationship)
 class ToManyRel(object):
 
+    includable = True
+
     def __init__(self, collection=None, meta=None,
                  related_link=None, self_link=None):
         if collection is None:
@@ -170,6 +174,8 @@ class ToManyRel(object):
 class UntypedRel:
     # Show that relationship objects need to be explicity to-one or
     # to-many; anything else is ill-defined.
+
+    includable = True
 
     def data(self):
         return None

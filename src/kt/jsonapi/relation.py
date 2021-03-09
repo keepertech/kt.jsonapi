@@ -1,4 +1,4 @@
-# (c) 2020.  Keeper Technology LLC.  All Rights Reserved.
+# (c) 2020 - 2021.  Keeper Technology LLC.  All Rights Reserved.
 # Use is subject to license.  Reproduction and distribution is strictly
 # prohibited.
 #
@@ -40,13 +40,14 @@ import kt.jsonapi.interfaces
 
 class RelationshipBase:
 
-    def __init__(self, source, target, name, addressable):
+    def __init__(self, source, target, name, addressable, includable=True):
         if addressable and not name:
             raise ValueError('addressable relationships must have a name')
         self.source = kt.jsonapi.interfaces.IResource(source)
         self.target = target
         self.name = name
         self.addressable = addressable
+        self.includable = includable
 
     def meta(self):
         """Minimal implementation returning empty relationship metadata.
@@ -67,6 +68,7 @@ class ToOneRelationship(RelationshipBase):
                  target: typing.Optional[kt.jsonapi.interfaces.IResource],
                  name: typing.Optional[str] = None,
                  addressable: bool = False,
+                 includable: bool = True,
                  indirect: bool = False):
         """Initialize relationship.
 
@@ -77,6 +79,9 @@ class ToOneRelationship(RelationshipBase):
             Required if either *indirect* or *addressable* is true.
         :param addressable:
             Indicates whether the relationship itself is addressable via URL.
+        :param includable:
+            Indicates whether resources from the relationship can be included
+            via the ``include`` query parameter.
         :param indirect:
             Indicates whether the relationship generates links to the target
             directly, or uses links relative to the source which are resolved
@@ -93,7 +98,8 @@ class ToOneRelationship(RelationshipBase):
         if target is not None:
             target = kt.jsonapi.interfaces.IResource(target)
         super(ToOneRelationship, self).__init__(source, target, name,
-                                                addressable)
+                                                addressable=addressable,
+                                                includable=includable)
         self.indirect = indirect
 
     def links(self):
@@ -133,7 +139,8 @@ class ToManyRelationship(RelationshipBase):
                  source: kt.jsonapi.interfaces.IResource,
                  collection: kt.jsonapi.interfaces.ICollection,
                  name: typing.Optional[str] = None,
-                 addressable: bool = False):
+                 addressable: bool = False,
+                 includable: bool = True):
         """Initialize relationship.
 
         :param source:  Resource object which owns the relationship.
@@ -143,10 +150,15 @@ class ToManyRelationship(RelationshipBase):
             Required if *addressable* is true.
         :param addressable:
             Indicates whether the relationship itself is addressable via URL.
+        :param includable:
+            Indicates whether resources from the relationship can be included
+            via the ``include`` query parameter.
+
         """
         target = kt.jsonapi.interfaces.ICollection(collection)
         super(ToManyRelationship, self).__init__(source, target, name,
-                                                 addressable)
+                                                 addressable=addressable,
+                                                 includable=includable)
 
     def collection(self):
         return self.target

@@ -1,4 +1,4 @@
-# (c) 2020.  Keeper Technology LLC.  All Rights Reserved.
+# (c) 2020 - 2021.  Keeper Technology LLC.  All Rights Reserved.
 # Use is subject to license.  Reproduction and distribution is strictly
 # prohibited.
 #
@@ -16,6 +16,8 @@ parsed request context; some require additional structures.
 These are not public API.
 
 """
+
+import werkzeug.exceptions
 
 import kt.jsonapi.interfaces
 
@@ -66,6 +68,10 @@ def relationship(context, relationship, relname=None):
                 id=res.id,
             )
             if relname:
+                if not relationship.includable:
+                    raise werkzeug.exceptions.BadRequest(
+                        'requested relationship "%s" cannot be included'
+                        % relname)
                 context.include_relation(relname, res)
 
     else:
@@ -82,6 +88,10 @@ def relationship(context, relationship, relname=None):
                         type=res.type,
                         id=res.id,
                     ))
+                    if not relationship.includable:
+                        raise werkzeug.exceptions.BadRequest(
+                            'requested relationship "%s" cannot be included'
+                            % relname)
                     context.include_relation(relname, res)
             else:
                 coll = kt.jsonapi.interfaces.ICollection(relmany.collection())

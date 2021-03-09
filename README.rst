@@ -14,6 +14,13 @@ The current implementation works with the Flask_ web framework.
 Release history
 ---------------
 
+#. Support relationships that cannot be included in composite documents
+   using the ``include`` query string parameter.  A request for
+   inclusion of resources from a non-empty, non-includable relationship
+   will cause an exception indicating a **400 Bad Request** response
+   will be raised.
+   https://kt-git.keepertech.com/DevTools/kt.jsonapi/-/issues/6
+
 
 1.2.1 (2021-01-12)
 ~~~~~~~~~~~~~~~~~~

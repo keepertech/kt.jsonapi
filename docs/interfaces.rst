@@ -81,6 +81,8 @@ Interfaces
      :members: set_sort
 .. autointerface:: IPagableCollection
      :members: set_pagination
+.. autointerface:: IResourceIdentifer
 .. autointerface:: IResource
+.. autointerface:: IRelationshipBase
 .. autointerface:: IToOneRelationship
 .. autointerface:: IToManyRelationship

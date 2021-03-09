@@ -1,4 +1,4 @@
-# (c) 2020.  Keeper Technology LLC.  All Rights Reserved.
+# (c) 2020 - 2021.  Keeper Technology LLC.  All Rights Reserved.
 # Use is subject to license.  Reproduction and distribution is strictly
 # prohibited.
 #
@@ -10,6 +10,7 @@ Tests for kt.jsonapi.serializers.
 
 """
 
+import werkzeug.exceptions
 import zope.component
 
 import kt.jsonapi.api
@@ -67,6 +68,19 @@ class ToOneRelationshipSerializerTestCase(tests.utils.JSONAPITestCase):
         )
         self.assertEqual(data, expected)
 
+    def test_non_includable_to_one_relationship(self):
+        related = tests.objects.SimpleResource(type='empty')
+        relation = tests.objects.ToOneRel(related)
+        relation.includable = False
+
+        with self.request_context('/?include=magic'):
+            context = kt.jsonapi.api.context()
+
+        with self.assertRaises(werkzeug.exceptions.BadRequest) as cm:
+            kt.jsonapi.serializers.relationship(context, relation, 'magic')
+
+        self.assertIn('cannot be included', cm.exception.description)
+
     def test_relationship_without_concrete_type(self):
         # Show that relationship objects need to be explicity to-one or
         # to-many; anything else is ill-defined.
@@ -102,6 +116,21 @@ class ToManyRelationshipSerializerTestCase(tests.utils.JSONAPITestCase):
             meta=dict(empty=True),
         )
         self.assertEqual(data, expected)
+
+    def test_non_includable_to_many_relationship(self):
+        r0 = tests.objects.SimpleResource(type='empty')
+        r1 = tests.objects.SimpleResource(type='empty')
+        coll = tests.objects.SimpleCollection([r0, r1])
+        relation = tests.objects.ToManyRel(coll)
+        relation.includable = False
+
+        with self.request_context('/?include=magic'):
+            context = kt.jsonapi.api.context()
+
+        with self.assertRaises(werkzeug.exceptions.BadRequest) as cm:
+            kt.jsonapi.serializers.relationship(context, relation, 'magic')
+
+        self.assertIn('cannot be included', cm.exception.description)
 
 
 class ResourceSerializerTestCase(tests.utils.JSONAPITestCase):

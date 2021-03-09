@@ -1,4 +1,4 @@
-# (c) 2019 - 2020.  Keeper Technology LLC.  All Rights Reserved.
+# (c) 2019 - 2021.  Keeper Technology LLC.  All Rights Reserved.
 # Use is subject to license.  Reproduction and distribution is strictly
 # prohibited.
 #
@@ -196,12 +196,14 @@ class IResourceIdentifer(IMetadataProvider):
         description=('Identifier to distinguish resource from'
                      ' from others of the same type'),
         required=True,
+        readonly=True,
     )
 
     type = MemberName(
         title='Type',
         description='JSON:API resource type identifier',
         required=True,
+        readonly=True,
     )
 
 
@@ -296,13 +298,28 @@ class IPagableCollection(ICollection):
         """
 
 
-class IToOneRelationship(ILinksProvider, IMetadataProvider):
+class IRelationshipBase(ILinksProvider, IMetadataProvider):
+
+    includable = zope.schema.Bool(
+        title='Includable',
+        description=(
+            'Indicates whether relationship can be included via `include`'
+            ' query string parameter.  If a non-includable relationship is'
+            ' requested for inclusion via `include`, a 400 Bad Request'
+            ' response will be generated instead.'
+        ),
+        required=True,
+        readonly=True,
+    )
+
+
+class IToOneRelationship(IRelationshipBase):
 
     def resource() -> typing.Optional[IResource]:
         """Return resource referenced by to-one relationship, or None."""
 
 
-class IToManyRelationship(ILinksProvider, IMetadataProvider):
+class IToManyRelationship(IRelationshipBase):
 
     def collection() -> ICollection:
         """Return collection of resources of to-many relationship.
