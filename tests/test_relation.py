@@ -17,8 +17,8 @@ import zope.component.hooks
 import zope.interface
 import zope.interface.registry
 
-import kt.jsonapi.relation
 import kt.jsonapi.interfaces
+import kt.jsonapi.relation
 import tests.objects
 import tests.utils
 

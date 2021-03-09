@@ -18,7 +18,6 @@ import kt.jsonapi.api
 import kt.jsonapi.interfaces
 import kt.jsonapi.link
 import kt.jsonapi.serializers
-
 import tests.objects
 import tests.test_relation
 import tests.utils

@@ -16,7 +16,6 @@ import zope.component
 import kt.jsonapi.api
 import kt.jsonapi.link
 import kt.jsonapi.serializers
-
 import tests.objects
 import tests.utils
 
