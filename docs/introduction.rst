@@ -269,7 +269,7 @@ the query parameter ``include=author``; the :mod:`kt.jsonapi`
 implementation will handle building a compound document for the
 response based on parameters defined in the specification.
 
-The 'JSONA:API context' object is responsible for interpreting the query
+The 'JSON:API context' object is responsible for interpreting the query
 parameters defined by the JSON:API specification and provides a small
 number of methods to generate responses;
 :meth:`~kt.jsonapi.api.Context.resource` is the method to generate a
