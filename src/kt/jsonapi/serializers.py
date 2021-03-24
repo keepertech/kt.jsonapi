@@ -59,43 +59,42 @@ def relationship(context, relationship, relname=None):
         relationship = relone
         res = relone.resource()
 
-        if res is None:
-            r['data'] = None
-        else:
-            res = kt.jsonapi.interfaces.IResource(res)
-            r['data'] = dict(
-                type=res.type,
-                id=res.id,
-            )
+        if relationship.includable:
+            if res is None:
+                r['data'] = None
+            else:
+                res = kt.jsonapi.interfaces.IResource(res)
+                r['data'] = dict(
+                    type=res.type,
+                    id=res.id,
+                )
             if relname:
-                if not relationship.includable:
-                    raise werkzeug.exceptions.BadRequest(
-                        'requested relationship "%s" cannot be included'
-                        % relname)
                 context.include_relation(relname, res)
+        elif relname:
+            raise werkzeug.exceptions.BadRequest(
+                f'requested relationship "{relname}" cannot be included')
 
     else:
         relmany = kt.jsonapi.interfaces.IToManyRelationship(relationship, None)
         if relmany is not None:
             relationship = relmany
-            if relname:
+            collection = kt.jsonapi.interfaces.ICollection(
+                relationship.collection())
+
+            if relationship.includable and relname:
                 r['data'] = []
-                collection = kt.jsonapi.interfaces.ICollection(
-                    relationship.collection())
                 for res in collection.resources():
                     res = kt.jsonapi.interfaces.IResource(res)
                     r['data'].append(dict(
                         type=res.type,
                         id=res.id,
                     ))
-                    if not relationship.includable:
-                        raise werkzeug.exceptions.BadRequest(
-                            'requested relationship "%s" cannot be included'
-                            % relname)
                     context.include_relation(relname, res)
+            elif relname:
+                raise werkzeug.exceptions.BadRequest(
+                    f'requested relationship "{relname}" cannot be included')
             else:
-                coll = kt.jsonapi.interfaces.ICollection(relmany.collection())
-                it = iter(coll.resources())
+                it = iter(collection.resources())
                 try:
                     res = next(it)
                 except StopIteration:

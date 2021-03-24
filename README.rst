@@ -18,7 +18,9 @@ Release history
    using the ``include`` query string parameter.  A request for
    inclusion of resources from a non-empty, non-includable relationship
    will cause an exception indicating a **400 Bad Request** response
-   will be raised.
+   will be raised.  If not mentioned in ``include``, the relationship
+   will be serialized without a ``data`` element; only ``links`` and
+   ``meta`` will be included, as appropriate.
    https://kt-git.keepertech.com/DevTools/kt.jsonapi/-/issues/6
 
 

@@ -302,12 +302,21 @@ class IRelationshipBase(ILinksProvider, IMetadataProvider):
 
     includable = zope.schema.Bool(
         title='Includable',
-        description=(
-            'Indicates whether relationship can be included via `include`'
-            ' query string parameter.  If a non-includable relationship is'
-            ' requested for inclusion via `include`, a 400 Bad Request'
-            ' response will be generated instead.'
-        ),
+        description="""
+            Indicates whether relationship can be included via ``include``
+            query string parameter.
+
+            If a non-includable relationship is requested for inclusion
+            via ``include``, an exception triggering a **400 Bad Request**
+            response will be raised during serialization.
+
+            When a non-includable relationship is serialized, no ``data``
+            member will be generated.  For to-one relationships, the'
+            resource will not be retrieved from the relationship, and for
+            to-many relationships, the collection's ``resources()`` method
+            will not be called.
+
+        """,
         required=True,
         readonly=True,
     )

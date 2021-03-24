@@ -67,7 +67,7 @@ class ToOneRelationshipSerializerTestCase(tests.utils.JSONAPITestCase):
         )
         self.assertEqual(data, expected)
 
-    def test_non_includable_to_one_relationship(self):
+    def test_non_includable_to_one_relationship_included(self):
         related = tests.objects.SimpleResource(type='empty')
         relation = tests.objects.ToOneRel(related)
         relation.includable = False
@@ -79,6 +79,23 @@ class ToOneRelationshipSerializerTestCase(tests.utils.JSONAPITestCase):
             kt.jsonapi.serializers.relationship(context, relation, 'magic')
 
         self.assertIn('cannot be included', cm.exception.description)
+
+    def test_non_includable_to_one_relationship_not_included(self):
+        related = tests.objects.SimpleResource(type='empty')
+        relation = tests.objects.ToOneRel(related)
+        relation.includable = False
+
+        with self.request_context('/'):
+            context = kt.jsonapi.api.context()
+
+        rel = kt.jsonapi.serializers.relationship(context, relation)
+        # In particular, there is no 'data' member in the relationship:
+        expected = dict(
+            links=dict(
+                related=f'/empty/{related.id}',
+            ),
+        )
+        self.assertEqual(rel, expected)
 
     def test_relationship_without_concrete_type(self):
         # Show that relationship objects need to be explicity to-one or
@@ -116,7 +133,7 @@ class ToManyRelationshipSerializerTestCase(tests.utils.JSONAPITestCase):
         )
         self.assertEqual(data, expected)
 
-    def test_non_includable_to_many_relationship(self):
+    def test_non_includable_to_many_relationship_included(self):
         r0 = tests.objects.SimpleResource(type='empty')
         r1 = tests.objects.SimpleResource(type='empty')
         coll = tests.objects.SimpleCollection([r0, r1])
@@ -130,6 +147,26 @@ class ToManyRelationshipSerializerTestCase(tests.utils.JSONAPITestCase):
             kt.jsonapi.serializers.relationship(context, relation, 'magic')
 
         self.assertIn('cannot be included', cm.exception.description)
+
+    def test_non_includable_to_many_relationship_not_included(self):
+        r0 = tests.objects.SimpleResource(type='empty')
+        r1 = tests.objects.SimpleResource(type='empty')
+        coll = tests.objects.SimpleCollection([r0, r1])
+        relation = tests.objects.ToManyRel(
+            coll, related_link=kt.jsonapi.link.Link('/some/things'))
+        relation.includable = False
+
+        with self.request_context('/'):
+            context = kt.jsonapi.api.context()
+
+        rel = kt.jsonapi.serializers.relationship(context, relation)
+        # In particular, there is no 'data' member in the relationship:
+        expected = dict(
+            links=dict(
+                related='/some/things',
+            ),
+        )
+        self.assertEqual(rel, expected)
 
 
 class ResourceSerializerTestCase(tests.utils.JSONAPITestCase):
