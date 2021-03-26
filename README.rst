@@ -14,6 +14,10 @@ The current implementation works with the Flask_ web framework.
 Release history
 ---------------
 
+
+1.3.0 (2021-03-26)
+~~~~~~~~~~~~~~~~~~
+
 #. Serialization of errors via adaptation is supported using a new
    context method.  This includes support for multiple error objects in
    a single response.  This does *not* cause JSON:API errors to be
@@ -24,11 +28,11 @@ Release history
 
 #. Support relationships that cannot be included in composite documents
    using the ``include`` query string parameter.  A request for
-   inclusion of resources from a non-empty, non-includable relationship
-   will cause an exception indicating a **400 Bad Request** response
-   will be raised.  If not mentioned in ``include``, the relationship
-   will be serialized without a ``data`` element; only ``links`` and
-   ``meta`` will be included, as appropriate.
+   inclusion of resources from a non-includable relationship will cause
+   an exception indicating a **400 Bad Request** response will be
+   raised.  Otherwise, the relationship will be serialized without a
+   ``data`` element; only ``links`` and ``meta`` will be included, as
+   appropriate.
    https://kt-git.keepertech.com/DevTools/kt.jsonapi/-/issues/6
 
 
