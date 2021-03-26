@@ -10,8 +10,6 @@ Tests for kt.jsonapi.error.
 
 """
 
-import flask
-
 import kt.jsonapi.api
 import kt.jsonapi.error
 import kt.jsonapi.interfaces
@@ -51,10 +49,10 @@ class InvalidNameErrorAdaptationTestCase(tests.utils.JSONAPITestCase):
 
     def test_invalid_member_name(self):
         with self.request_context('/?fields[type]=ok,some junk'):
-            try:
-                context = kt.jsonapi.api.context()
-            except kt.jsonapi.interfaces.InvalidMemberName as e:
-                exc = e
+            with self.assertRaises(
+                    kt.jsonapi.interfaces.InvalidMemberName) as cm:
+                kt.jsonapi.api.context()
+        exc = cm.exception
         self.assertTrue(
             kt.jsonapi.interfaces.IInvalidNameException.providedBy(exc))
         error = kt.jsonapi.error.invalidNameError(exc)
@@ -66,10 +64,10 @@ class InvalidNameErrorAdaptationTestCase(tests.utils.JSONAPITestCase):
 
     def test_invalid_relationship_path(self):
         with self.request_context('/?include=onerelation,two relation'):
-            try:
-                context = kt.jsonapi.api.context()
-            except kt.jsonapi.interfaces.InvalidRelationshipPath as e:
-                exc = e
+            with self.assertRaises(
+                    kt.jsonapi.interfaces.InvalidRelationshipPath) as cm:
+                kt.jsonapi.api.context()
+        exc = cm.exception
         self.assertTrue(
             kt.jsonapi.interfaces.IInvalidNameException.providedBy(exc))
         error = kt.jsonapi.error.invalidNameError(exc)
@@ -82,10 +80,10 @@ class InvalidNameErrorAdaptationTestCase(tests.utils.JSONAPITestCase):
 
     def test_invalid_type_name(self):
         with self.request_context('/?fields[abc def]=onefield,twofield'):
-            try:
-                context = kt.jsonapi.api.context()
-            except kt.jsonapi.interfaces.InvalidTypeName as e:
-                exc = e
+            with self.assertRaises(
+                    kt.jsonapi.interfaces.InvalidTypeName) as cm:
+                kt.jsonapi.api.context()
+        exc = cm.exception
         self.assertTrue(
             kt.jsonapi.interfaces.IInvalidNameException.providedBy(exc))
         error = kt.jsonapi.error.invalidNameError(exc)
@@ -102,10 +100,10 @@ class InvalidStructureErrorAdaptationTestCase(tests.utils.JSONAPITestCase):
         err = kt.jsonapi.error.Error()
         with self.request_context('/'):
             context = kt.jsonapi.api.context()
-            try:
+            with self.assertRaises(
+                    kt.jsonapi.interfaces.InvalidResultStructure) as cm:
                 context.error(err)
-            except kt.jsonapi.interfaces.InvalidResultStructure as e:
-                exc = e
+        exc = cm.exception
         self.assertTrue(
             kt.jsonapi.interfaces.IInvalidResultStructure.providedBy(exc))
         error = kt.jsonapi.error.invalidStructureError(exc)
@@ -119,10 +117,10 @@ class QueryStringErrorAdaptationTestCase(tests.utils.JSONAPITestCase):
     def test_adapter(self):
         # Create a context from a bad query string, and capture the exception:
         with self.request_context('/?include[abc]=def'):
-            try:
+            with self.assertRaises(
+                    kt.jsonapi.interfaces.QueryStringException) as cm:
                 kt.jsonapi.api.context()
-            except kt.jsonapi.interfaces.QueryStringException as e:
-                exc = e
+        exc = cm.exception
         self.assertTrue(
             kt.jsonapi.interfaces.IQueryStringException.providedBy(exc))
         error = kt.jsonapi.error.queryStringError(exc)
