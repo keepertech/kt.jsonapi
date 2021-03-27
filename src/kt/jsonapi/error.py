@@ -32,8 +32,10 @@ class Error:
                  title: typing.Optional[str] = None,
                  detail: typing.Optional[str] = None,
                  about: typing.Optional[str] = None,
+                 type: typing.Optional[str] = None,
                  pointer: typing.Optional[str] = None,
                  parameter: typing.Optional[str] = None,
+                 header: typing.Optional[str] = None,
                  meta: typing.Optional[dict] = None):
         """Initialize error structure.
 
@@ -47,17 +49,28 @@ class Error:
             Human-oriented description of the problem; may contain
             instance-specific details.
         :param about:
-            Link to human-oriented description of the problem; may contain
-            instance-specific details.  The response to requesting the
-            link may perform content negotiation to return a document in
-            an appropriate format and language for presentation.
-            Used to populate the ``links`` object in the error object.
+            Link to human-oriented description of the specific problem;
+            may contain instance-specific details.  The response to
+            requesting the link may perform content negotiation to
+            return a document in an appropriate format and language for
+            presentation.  Used to populate the ``links`` object in the
+            error object.
+        :param type:
+            Link to human-oriented description of the general problem;
+            must not contain instance-specific details.  The response to
+            requesting the link may perform content negotiation to
+            return a document in an appropriate format and language for
+            presentation.  Used to populate the ``links`` object in the
+            error object.
         :param pointer:
             JSON Pointer referring to part of a request document which
             caused the error.
             Used to populate the ``source`` object in the error object.
         :param parameter:
             Name of a query string parameter that triggered the error.
+            Used to populate the ``source`` object in the error object.
+        :param header:
+            Name of a request header that triggered the error.
             Used to populate the ``source`` object in the error object.
         :param meta:
             Mapping providing non-standard fields of additional data
@@ -70,22 +83,30 @@ class Error:
         self.title = title
         self.detail = detail
         self._about = about
+        self._type = type
         self._pointer = pointer
         self._parameter = parameter
+        self._header = header
         self._meta = meta or {}
+
+    def _build_link(self, value):
+        if isinstance(value, str):
+            value = kt.jsonapi.link.Link(value)
+        return value
 
     def links(self):
         """Return links for the error.
 
-        This uses the *about* parameter to the constructor, if provided.
+        This uses the *about* and *type* parameters to the constructor,
+        if provided.
 
         """
+        links = {}
         if self._about is not None:
-            if isinstance(self._about, str):
-                self._about = kt.jsonapi.link.Link(self._about)
-            return {'about': self._about}
-        else:
-            return {}
+            links['about'] = self._about = self._build_link(self._about)
+        if self._type is not None:
+            links['type'] = self._type = self._build_link(self._type)
+        return links
 
     def meta(self):
         """Return metadata for this error.
@@ -100,8 +121,8 @@ class Error:
     def source(self):
         """Return error source information.
 
-        This uses the *pointer* and *parameter* arguments to the
-        constructor to identify the error source.
+        This uses the *header*, *pointer* and *parameter* arguments to
+        the constructor to identify the error source.
 
         """
         d = {}
@@ -109,6 +130,8 @@ class Error:
             d['pointer'] = self._pointer
         if self._parameter:
             d['parameter'] = self._parameter
+        if self._header:
+            d['header'] = self._header
         return d
 
 

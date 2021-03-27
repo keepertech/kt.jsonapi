@@ -79,6 +79,7 @@ class ErrorResponseTestCase(tests.utils.JSONAPITestCase):
         eid = str(uuid.uuid4())
         about_link = (f'https://api.example.com/error/dont-touch-this'
                       f'?report={eid}')
+        type_link = 'https://api.example.com/error/dont-touch-this'
         self.error = kt.jsonapi.error.Error(
             id=eid,
             status=403,
@@ -86,6 +87,7 @@ class ErrorResponseTestCase(tests.utils.JSONAPITestCase):
             title='Do Not Touch This',
             detail="You don't have permission to touch this.",
             about=about_link,
+            type=type_link,
             parameter='this',
         )
 
@@ -100,7 +102,8 @@ class ErrorResponseTestCase(tests.utils.JSONAPITestCase):
         self.assertEqual(error['code'], self.error.code)
         self.assertEqual(error['detail'], self.error.detail)
         self.assertEqual(error['id'], eid)
-        self.assertEqual(error['links'], dict(about=about_link))
+        self.assertEqual(error['links'], dict(about=about_link,
+                                              type=type_link))
         self.assertEqual(error['source'], dict(parameter='this'))
         self.assertEqual(error['status'], '403')
         self.assertEqual(error['title'], self.error.title)
@@ -126,12 +129,16 @@ class ErrorResponseTestCase(tests.utils.JSONAPITestCase):
         eid = str(uuid.uuid4())
         about_link = (f'https://api.example.com/error/dont-touch-this'
                       f'?report={eid}')
+        type_link = 'https://api.example.com/error/dont-touch-this'
         self.error = kt.jsonapi.error.Error(
             id=eid,
             status=400,
             about=kt.jsonapi.link.Link(href=about_link,
                                        meta=dict(alternate='just-dont')),
+            type=kt.jsonapi.link.Link(href=type_link,
+                                      meta=dict(pity='fool')),
             meta=dict(noisy=True),
+            header='X-Pity-The-Fool',
         )
 
         resp = self.http_get('/', status=self.error.status)
@@ -149,8 +156,13 @@ class ErrorResponseTestCase(tests.utils.JSONAPITestCase):
                                  href=about_link,
                                  meta=dict(alternate='just-dont'),
                              ),
+                             type=dict(
+                                 href=type_link,
+                                 meta=dict(pity='fool'),
+                             ),
                          ))
         self.assertEqual(error['meta'], dict(noisy=True))
+        self.assertEqual(error['source'], dict(header='X-Pity-The-Fool'))
         self.assertEqual(error['status'], '400')
 
     def test_multiple_jsonapi_errors_same_status(self):
