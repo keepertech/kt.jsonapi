@@ -22,18 +22,29 @@ import werkzeug.exceptions
 import kt.jsonapi.interfaces
 
 
-def link(link):
-    ob = kt.jsonapi.interfaces.ILink(link)
+def link(lynk):
+    ob = kt.jsonapi.interfaces.ILink(lynk)
     # if ob is None and isinstance(link, str):
     #     return link
+    d = dict(href=ob.href)
+    if ob.rel:
+        d['rel'] = ob.rel
+    if ob.describedby:
+        d['describedby'] = link(ob.describedby)
+    if ob.title:
+        d['title'] = ob.title
+    if ob.type is not None:
+        d['type'] = ob.type
+    hreflang = ob.hreflang
+    if hreflang:
+        d['hreflang'] = hreflang
     meta = dict(ob.meta())
     if meta:
-        return dict(
-            href=ob.href,
-            meta=meta,
-        )
-    else:
+        d['meta'] = meta
+    if len(d) == 1:
         return ob.href
+    else:
+        return d
 
 
 def _collection_links(ob):

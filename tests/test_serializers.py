@@ -396,3 +396,42 @@ class ResourceSerializerTestCase(tests.utils.JSONAPITestCase):
             attributes=dict(num=42),
         )]
         self.assertEqual(context.included, included)
+
+
+class LinkSerializerTestCase(tests.utils.JSONAPITestCase):
+
+    def test_minimal_link(self):
+        link = kt.jsonapi.link.Link(href='/big/bad/url/ref')
+
+        data = kt.jsonapi.serializers.link(link)
+        self.assertEqual(data, '/big/bad/url/ref')
+
+    def test_maximal_link(self):
+        link = kt.jsonapi.link.Link(
+            href='/big/bad/url/ref',
+            rel='copyright',
+            describedby=kt.jsonapi.link.Link(
+                '/big/bad/app/schema',
+                type='application/x-myschema+xml'),
+            title='Big Bad Document',
+            type='application/json',
+            hreflang=('en', 'fr', 'zh', 'x-leet'),
+            meta=dict(structured='kinda-sorta'),
+        )
+
+        data = kt.jsonapi.serializers.link(link)
+        expected = dict(
+            href='/big/bad/url/ref',
+            rel='copyright',
+            describedby=dict(
+                href='/big/bad/app/schema',
+                type='application/x-myschema+xml',
+            ),
+            title='Big Bad Document',
+            type='application/json',
+            hreflang=['en', 'fr', 'zh', 'x-leet'],
+            meta=dict(
+                structured='kinda-sorta',
+            ),
+        )
+        self.assertEqual(data, expected)

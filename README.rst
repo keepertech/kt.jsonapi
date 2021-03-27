@@ -14,7 +14,7 @@ The current implementation works with the Flask_ web framework.
 Release history
 ---------------
 
-#. Add support for JSON:API 1.1 enhancements to the error object.
+#. Support JSON:API 1.1 enhancements to the link & error objects.
 
 
 1.3.0 (2021-03-26)
