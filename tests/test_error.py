@@ -10,6 +10,8 @@ Tests for kt.jsonapi.error.
 
 """
 
+import zope.schema
+
 import kt.jsonapi.api
 import kt.jsonapi.error
 import kt.jsonapi.interfaces
@@ -55,8 +57,14 @@ class InvalidNameErrorAdaptationTestCase(tests.utils.JSONAPITestCase):
         exc = cm.exception
         self.assertTrue(
             kt.jsonapi.interfaces.IInvalidNameException.providedBy(exc))
+
         error = kt.jsonapi.error.invalidNameError(exc)
+
+        errors = zope.schema.getValidationErrors(
+            kt.jsonapi.interfaces.IError, error)
+        self.assertEqual(list(errors), [])
         self.assertTrue(kt.jsonapi.interfaces.IError.providedBy(error))
+
         self.assertIn('Member name is invalid', error.title)
         self.assertEqual(error.status, 400)
         self.assertEqual(error.source(), dict(parameter='fields[type]'))
@@ -70,8 +78,14 @@ class InvalidNameErrorAdaptationTestCase(tests.utils.JSONAPITestCase):
         exc = cm.exception
         self.assertTrue(
             kt.jsonapi.interfaces.IInvalidNameException.providedBy(exc))
+
         error = kt.jsonapi.error.invalidNameError(exc)
+
+        errors = zope.schema.getValidationErrors(
+            kt.jsonapi.interfaces.IError, error)
+        self.assertEqual(list(errors), [])
         self.assertTrue(kt.jsonapi.interfaces.IError.providedBy(error))
+
         self.assertIn('Relationship path includes invalid member name',
                       error.title)
         self.assertEqual(error.status, 400)
@@ -86,8 +100,14 @@ class InvalidNameErrorAdaptationTestCase(tests.utils.JSONAPITestCase):
         exc = cm.exception
         self.assertTrue(
             kt.jsonapi.interfaces.IInvalidNameException.providedBy(exc))
+
         error = kt.jsonapi.error.invalidNameError(exc)
+
+        errors = zope.schema.getValidationErrors(
+            kt.jsonapi.interfaces.IError, error)
+        self.assertEqual(list(errors), [])
         self.assertTrue(kt.jsonapi.interfaces.IError.providedBy(error))
+
         self.assertIn('Type name is invalid', error.title)
         self.assertEqual(error.status, 400)
         self.assertEqual(error.source(), dict(parameter='fields[abc def]'))
@@ -106,8 +126,14 @@ class InvalidStructureErrorAdaptationTestCase(tests.utils.JSONAPITestCase):
         exc = cm.exception
         self.assertTrue(
             kt.jsonapi.interfaces.IInvalidResultStructure.providedBy(exc))
+
         error = kt.jsonapi.error.invalidStructureError(exc)
+
+        errors = zope.schema.getValidationErrors(
+            kt.jsonapi.interfaces.IError, error)
+        self.assertEqual(list(errors), [])
         self.assertTrue(kt.jsonapi.interfaces.IError.providedBy(error))
+
         self.assertEqual(error.status, 500)
         self.assertEqual(error.meta(), dict(structure_type='error'))
 
@@ -123,8 +149,14 @@ class QueryStringErrorAdaptationTestCase(tests.utils.JSONAPITestCase):
         exc = cm.exception
         self.assertTrue(
             kt.jsonapi.interfaces.IQueryStringException.providedBy(exc))
+
         error = kt.jsonapi.error.queryStringError(exc)
+
+        errors = zope.schema.getValidationErrors(
+            kt.jsonapi.interfaces.IError, error)
+        self.assertEqual(list(errors), [])
         self.assertTrue(kt.jsonapi.interfaces.IError.providedBy(error))
+
         self.assertEqual(error.status, 400)
         self.assertIn('query string', error.title)
         self.assertIn('unsupported value', error.title)

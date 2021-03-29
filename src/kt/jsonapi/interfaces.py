@@ -253,6 +253,52 @@ class ILink(IMetadataProvider):
 
     href = URL(required=True)
 
+    rel = zope.schema.ASCIILine(
+        description='The :rfc:`8288` relationship type of the link.',
+        min_length=1,
+        required=False,
+        missing_value=None,
+    )
+
+    describedby = zope.schema.Object(
+        description='''
+            Link to a description document describing the link target.
+            This is usualy a specification such as OpenAPI, JSON Schema,
+            or XML Schema.
+        ''',
+        # NB: This gets fixed up below; we can't refer to ILink yet.
+        schema=IMetadataProvider,
+        required=False,
+        missing_value=None,
+    )
+
+    title = zope.schema.TextLine(
+        description='''
+            Human-facing title for the link, possibly suitable as a
+            menu entry.  This is not necessarily the title of the
+            linked document.
+        ''',
+        min_length=1,
+        required=False,
+        missing_value=None,
+    )
+
+    type = zope.schema.ASCIILine(
+        description='Media type of the document referenced by *href*.',
+        min_length=3,
+        required=False,
+        missing_value=None,
+    )
+
+    hreflang = zope.interface.Attribute('hreflang', '''
+        String or sequence of strings specifying languages the target
+        document is available in.  Each entry must conform to
+        :rfc:`5646`.  May be `None`.
+    ''')
+
+
+ILink.get('describedby').schema = ILink
+
 
 class ILinksProvider(zope.interface.Interface):
 

@@ -146,7 +146,7 @@ def invalidNameError(exc):
     """
     return Error(
         status=400,
-        title=exc.__doc__,
+        title=exc.__doc__.strip() or None,
         detail=str(exc),
         parameter=exc.field.__name__,
         meta=dict(invalid_value=exc.value),
@@ -164,7 +164,7 @@ def invalidStructureError(exc):
     """
     return Error(
         status=500,
-        title=exc.__doc__,
+        title=exc.__doc__.strip() or None,
         detail=str(exc),
         meta=dict(structure_type=exc.kind),
     )
@@ -181,7 +181,7 @@ def queryStringError(exc):
     """
     return Error(
         status=400,
-        title=exc.__doc__,
+        title=exc.__doc__.strip() or None,
         detail=str(exc),
         parameter=exc.key,
     )
