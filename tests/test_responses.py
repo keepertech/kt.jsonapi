@@ -968,6 +968,50 @@ class ResourceResponseTestCase(tests.utils.JSONAPITestCase):
         self.assertEqual(data['data'], expected)
         self.assertNotIn('included', data)
 
+    def test_resource_includes_suppressed_relation(self):
+        related0 = tests.objects.SimpleResource(type='empty')
+        relation0 = tests.objects.ToOneRel(related0)
+        related1 = tests.objects.SimpleResource(type='empty')
+        relation1 = tests.objects.ToOneRel(related1)
+        resource = tests.objects.SimpleResource(
+            attributes={'basic-attr': 42,
+                        'list-attr': ['a', 'b', 'c'],
+                        'string-attr': 'text'},
+            meta={'version': 24},
+            relationships={'configuration': relation0,
+                           'extension': relation1},
+        )
+
+        class Render(flask_restful.Resource):
+            def get(inst):
+                return kt.jsonapi.api.context().resource(resource)
+
+        self.api.add_resource(Render, '/')
+
+        resp = self.http_get(
+            f'/?fields[{resource.type}]=string-attr&include=configuration')
+        data = resp.json
+        self.assertEqual(resp.headers['Content-Type'],
+                         'application/vnd.api+json')
+        expected_resource = dict(
+            id=resource.id,
+            type=resource.type,
+            attributes={'string-attr': 'text'},
+            links=dict(
+                self=resource.links()['self'].href,
+            ),
+            meta=dict(version=24),
+        )
+        included_resource = dict(
+            id=related0.id,
+            links=dict(
+                self=f'/{related0.type}/{related0.id}',
+            ),
+            type=related0.type,
+        )
+        self.assertEqual(data['data'], expected_resource)
+        self.assertEqual(data['included'], [included_resource])
+
 
 class CreatedResponseTestCase(ResourceResponseTestCase):
 

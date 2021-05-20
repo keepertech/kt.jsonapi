@@ -185,12 +185,17 @@ def resource(context, resource):
     if d:
         r['meta'] = d
 
-    d = dict(resource.relationships())
-    d = context.select_fields(resource.type, d)
+    rels = dict(resource.relationships())
+    d = context.select_fields(resource.type, rels).copy()
     if d:
         for name, rel in d.items():
             relname = name if context.should_include(name) else None
             d[name] = relationship(context, rel, relname=relname)
+            # Avoid considering this relationship for inclusion again:
+            del rels[name]
         r['relationships'] = d
+    for name, rel in rels.items():
+        if context.should_include(name):
+            relationship(context, rel, relname=name)
 
     return r

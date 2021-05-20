@@ -16,6 +16,11 @@ Release history
 
 #. Support JSON:API 1.1 enhancements to the link & error objects.
 
+#. Include content from relationships which were identified in the
+   ``include`` query parameter even if the relationships themselves were
+   excluded by a ``fields[...]`` parameter.
+   https://kt-git.keepertech.com/DevTools/kt.jsonapi/-/issues/13
+
 
 1.3.0 (2021-03-26)
 ~~~~~~~~~~~~~~~~~~
