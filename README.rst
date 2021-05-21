@@ -21,6 +21,8 @@ Release history
    excluded by a ``fields[...]`` parameter.
    https://kt-git.keepertech.com/DevTools/kt.jsonapi/-/issues/13
 
+#. Update to modern PyPA tooling recommendations.
+
 
 1.3.0 (2021-03-26)
 ~~~~~~~~~~~~~~~~~~
