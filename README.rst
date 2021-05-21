@@ -16,6 +16,13 @@ Release history
 
 #. Support JSON:API 1.1 enhancements to the link & error objects.
 
+#. Support ``include`` and ``fields`` as appropriate for responses where
+   the primary data is a relationship.  This reflects an extension of
+   the relationship interfaces with the ``name`` attribute, which
+   remains optional; if not present, ``include`` and ``fields`` continue
+   to generate an error.
+   https://kt-git.keepertech.com/DevTools/kt.jsonapi/-/issues/12
+
 #. Include content from relationships which were identified in the
    ``include`` query parameter even if the relationships themselves were
    excluded by a ``fields[...]`` parameter.

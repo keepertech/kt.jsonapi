@@ -393,6 +393,31 @@ class Context(_BaseContext):
         return [qparam for qparam in self._qparams
                 if qparam.aspect not in excluding]
 
+    def _check_rel_fields_include(self, rel):
+        name = getattr(rel, 'name', None)
+        if name:
+            if self.fields and 'include' not in self._query:
+                raise werkzeug.exceptions.BadRequest(
+                    'cannot specify sparse field sets for a relationship'
+                    ' without using include to request resources')
+            prefix = name + '.'
+            badpaths = []
+            for relpath in self.relpaths:
+                if relpath == name or relpath.startswith(prefix):
+                    continue
+                badpaths.append(relpath)
+            if badpaths:
+                badpaths.sort()
+                exc = werkzeug.exceptions.BadRequest(
+                    f'cannot include relationship paths that do not start'
+                    f' with "{name}"')
+                exc.disallowed_relationship_paths = badpaths
+                raise exc
+        elif self.fields or 'include' in self._query:
+            raise werkzeug.exceptions.BadRequest(
+                'cannot specify sparse field sets or relationships'
+                ' to include for a relationship')
+
     def relationship(self, relationship, headers=None):
         """Generate response containing a relationship as primary data.
 
@@ -409,26 +434,47 @@ class Context(_BaseContext):
         from the request with the incoming pagination parameters stripped
         out.
 
-        """
-        if self.fields or 'include' in self._query:
-            raise werkzeug.exceptions.BadRequest(
-                'cannot specify sparse field sets or relationships'
-                ' to include for a relationship')
+        If *relationship* has a value for the ``name`` attribute and is
+        includable, the ``fields`` and ``include`` query parameters can
+        be applied.  ``fields`` is only allowed if ``include`` is also
+        provided.  If ``include`` specifies relationship paths that do
+        not start with the name of *relationship*, a 400 response will
+        be triggered.  If *relationship* is not includable, a 400
+        response will be triggered.
 
+        If there is no ``name`` value, the presence of a ``fields`` or
+        ``include`` parameter will trigger a 400 response.
+
+        .. versionchanged:: 1.4.0
+           Prior versions always triggered a 400 response if ``fields``
+           or ``include`` were present in the query string.
+
+        """
         rel = kt.jsonapi.interfaces.IToManyRelationship(relationship, None)
         if rel is None:
             # Reject collection parameters; order should match that of
             # _prepare_collection.
             self._disallow_collection_params('to-one relationship')
-            body = kt.jsonapi.serializers.relationship(self, relationship)
+            rel = kt.jsonapi.interfaces.IToOneRelationship(relationship, None)
+            self._check_rel_fields_include(rel)
+            name = getattr(rel, 'name', None)
+            name = name if (name and self.should_include(name)) else None
+            body = kt.jsonapi.serializers.relationship(self, rel,
+                                                       relname=name)
         else:
+            self._check_rel_fields_include(rel)
+            name = getattr(rel, 'name', None)
+            name = name if (name and self.should_include(name)) else None
             # to-many, so collection parameters are applicable.
             collection = kt.jsonapi.interfaces.ICollection(rel.collection())
             self._prepare_collection(collection)
             resources = list(kt.jsonapi.interfaces.IResource(resource)
                              for resource in collection.resources())
-            data = [dict(type=resource.type, id=resource.id)
-                    for resource in resources]
+            data = []
+            for resource in resources:
+                data.append(dict(type=resource.type, id=resource.id))
+                if name:
+                    self.include_relation(name, resource)
             # We're doing this mostly to pick up pagination links:
             body = dict(
                 kt.jsonapi.serializers._relationship_body_except_data(
@@ -437,6 +483,8 @@ class Context(_BaseContext):
             )
         if body.get('links'):
             self._apply_query_params(body['links'])
+        if 'include' in self._query:
+            body['included'] = self.included
 
         return self._response(body, headers=headers)
 

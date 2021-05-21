@@ -324,7 +324,153 @@ class RelationshipResponseTestCase(tests.utils.JSONAPITestCase):
         self.assertIn('page is not supported', message)
         self.assertIn('for to-one relationship', message)
 
-    def test_relation_with_fields(self):
+    def test_named_relation_with_fields(self):
+        self.relation = tests.objects.ToOneRel(None)
+        self.relation.name = 'magical'
+
+        resp = self.http_get('/?fields[baggage]=abc,def', status=400)
+        self.assertEqual(resp.headers['Content-Type'], 'application/json')
+        message = resp.json['message']
+        self.assertIn('cannot specify sparse field sets', message)
+        self.assertIn('for a relationship', message)
+        self.assertIn('without using include', message)
+
+    def test_named_relation_with_disallowed_include(self):
+        self.relation = tests.objects.ToOneRel(None)
+        self.relation.name = 'magical'
+
+        resp = self.http_get(
+            '/?include=magical.comics,muggle.comics', status=400)
+        self.assertEqual(resp.headers['Content-Type'], 'application/json')
+        message = resp.json['message']
+        self.assertIn('cannot include relationship paths that', message)
+        self.assertIn('do not start with "magical"', message)
+
+    def test_named_relation_with_allowed_include(self):
+        self.relation = tests.objects.ToOneRel(None)
+        self.relation.name = 'magical'
+
+        resp = self.http_get('/?include=magical.comics')
+        self.assertEqual(resp.headers['Content-Type'],
+                         'application/vnd.api+json')
+        expected = dict(
+            data=None,
+            included=[],
+        )
+        self.assertEqual(resp.get_json(), expected)
+
+    def test_named_to_many_relation_with_allowed_include_included(self):
+        comic0 = tests.objects.SimpleResource(
+            type='comic', attributes=dict(funny=True))
+        comic1 = tests.objects.SimpleResource(
+            type='comic', attributes=dict(funny=False))
+        self.relation = tests.objects.ToManyRel(
+            collection=tests.objects.SimpleCollection(
+                resources=[comic0, comic1],
+            ),
+        )
+        self.relation.name = 'comics'
+
+        resp = self.http_get('/?include=comics')
+        self.assertEqual(resp.headers['Content-Type'],
+                         'application/vnd.api+json')
+        comic0_expected = dict(
+            id=comic0.id,
+            type=comic0.type,
+            attributes=dict(funny=True),
+            links=dict(self=f'/{comic0.type}/{comic0.id}'),
+        )
+        comic1_expected = dict(
+            id=comic1.id,
+            type=comic1.type,
+            attributes=dict(funny=False),
+            links=dict(self=f'/{comic1.type}/{comic1.id}'),
+        )
+        payload = resp.get_json()
+        self.assertEqual(payload['data'],
+                         [dict(id=comic0.id, type=comic0.type),
+                          dict(id=comic1.id, type=comic1.type)])
+        self.assertIn(comic0_expected, payload['included'])
+        self.assertIn(comic1_expected, payload['included'])
+        self.assertEqual(len(payload['included']), 2)
+        self.assertEqual(len(payload), 2)
+
+    def test_named_to_one_relation_with_allowed_include_included(self):
+        comic0 = tests.objects.SimpleResource(
+            type='comic', attributes=dict(funny=True))
+        comic1 = tests.objects.SimpleResource(
+            type='comic', attributes=dict(funny=False))
+        related = tests.objects.SimpleResource(
+            attributes=dict(scale=42),
+            relationships=dict(
+                comics=tests.objects.ToManyRel(
+                    collection=tests.objects.SimpleCollection(
+                        resources=[comic0, comic1],
+                    ),
+                ),
+            ),
+        )
+        self.relation = tests.objects.ToOneRel(related)
+        self.relation.name = 'magical'
+
+        resp = self.http_get('/?include=magical.comics')
+        self.assertEqual(resp.headers['Content-Type'],
+                         'application/vnd.api+json')
+        comic0_expected = dict(
+            id=comic0.id,
+            type=comic0.type,
+            attributes=dict(funny=True),
+            links=dict(self=f'/{comic0.type}/{comic0.id}'),
+        )
+        comic1_expected = dict(
+            id=comic1.id,
+            type=comic1.type,
+            attributes=dict(funny=False),
+            links=dict(self=f'/{comic1.type}/{comic1.id}'),
+        )
+        related_expected = dict(
+            id=related.id,
+            type=related.type,
+            attributes=dict(scale=42),
+            links=dict(self=f'/{related.type}/{related.id}'),
+            relationships=dict(
+                comics=dict(
+                    data=[
+                        dict(id=comic0.id, type=comic0.type),
+                        dict(id=comic1.id, type=comic1.type),
+                    ],
+                ),
+            ),
+        )
+        payload = resp.get_json()
+        self.assertEqual(payload['data'],
+                         dict(id=related.id, type=related.type))
+        self.assertEqual(payload['links'],
+                         dict(related=f'/{related.type}/{related.id}'))
+        self.assertIn(comic0_expected, payload['included'])
+        self.assertIn(comic1_expected, payload['included'])
+        self.assertIn(related_expected, payload['included'])
+        self.assertEqual(len(payload['included']), 3)
+        self.assertEqual(len(payload), 3)
+
+    def test_named_non_includable_relation_with_allowed_include(self):
+        related = tests.objects.SimpleResource(
+            attributes=dict(scale=42),
+        )
+        self.relation = tests.objects.ToOneRel(related)
+        self.relation.includable = False
+        self.relation.name = 'magical'
+
+        resp = self.http_get('/?include=magical', status=400)
+        self.assertEqual(resp.headers['Content-Type'],
+                         'application/json')
+        payload = resp.get_json()
+        message = payload['message']
+        self.assertEqual(
+            message,
+            'requested relationship "magical" cannot be included')
+
+    def test_unnamed_relation_with_fields(self):
         self.relation = tests.objects.ToOneRel(None)
 
         resp = self.http_get('/?fields[baggage]=abc,def', status=400)
@@ -333,7 +479,7 @@ class RelationshipResponseTestCase(tests.utils.JSONAPITestCase):
         self.assertIn('cannot specify sparse field sets', message)
         self.assertIn('for a relationship', message)
 
-    def test_relation_with_include(self):
+    def test_unnamed_relation_with_include(self):
         self.relation = tests.objects.ToOneRel(None)
 
         resp = self.http_get('/?include=abc,def.ghi', status=400)

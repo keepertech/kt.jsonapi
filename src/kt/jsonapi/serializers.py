@@ -106,8 +106,8 @@ def relationship(context, relationship, relname=None):
                     type=res.type,
                     id=res.id,
                 )
-            if relname:
-                context.include_relation(relname, res)
+                if relname:
+                    context.include_relation(relname, res)
         elif relname:
             raise werkzeug.exceptions.BadRequest(
                 f'requested relationship "{relname}" cannot be included')

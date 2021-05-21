@@ -445,6 +445,23 @@ class IRelationshipBase(ILinksProvider, IMetadataProvider):
         readonly=True,
     )
 
+    name = MemberName(
+        title='Name',
+        description="""
+            Field name of the relationship.
+
+            .. versionadded:: 1.4.0
+               *name* added to relationship interfaces.  Relationships
+               without a value for this attribute cannot be returned as
+               primary data when ``fields`` or ``include`` are specified
+               in the request.
+        """,
+        missing_value=None,
+        # Can't require this, since we're adding this in a later version.
+        required=False,
+        readonly=True,
+    )
+
 
 class IToOneRelationship(IRelationshipBase):
 
