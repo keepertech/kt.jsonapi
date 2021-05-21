@@ -331,7 +331,7 @@ class IResourceIdentifer(IMetadataProvider):
     )
 
 
-class IResource(IResourceIdentifer, ILinksProvider, IMetadataProvider):
+class IResource(IResourceIdentifer, ILinksProvider):
 
     def attributes() -> IFieldMapping:
         """Return mapping of attribute names to values."""
