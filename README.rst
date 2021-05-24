@@ -14,6 +14,10 @@ The current implementation works with the Flask_ web framework.
 Release history
 ---------------
 
+
+1.4.0 (2021-05-24)
+~~~~~~~~~~~~~~~~~~
+
 #. Support JSON:API 1.1 enhancements to the link & error objects.
 
 #. Support ``include`` and ``fields`` as appropriate for responses where
