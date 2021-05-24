@@ -76,7 +76,7 @@ def _ismap(ob):
     return isinstance(ob, dict)
 
 
-class QueryParameter(object):
+class QueryParameter:
 
     __slots__ = 'key', 'value', 'aspect'
 

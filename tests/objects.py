@@ -20,7 +20,7 @@ import kt.jsonapi.link
 
 
 @zope.interface.implementer(kt.jsonapi.interfaces.IResource)
-class SimpleResource(object):
+class SimpleResource:
 
     def __init__(self, id=None, type='baggage',
                  attributes={}, meta={}, relationships={}):
@@ -47,7 +47,7 @@ class SimpleResource(object):
 
 
 @zope.interface.implementer(kt.jsonapi.interfaces.ICollection)
-class SimpleCollection(object):
+class SimpleCollection:
 
     ncalls_resources = 0
     ncalls_set_filter = 0
@@ -94,7 +94,7 @@ class SimpleCollection(object):
 
 
 @zope.interface.implementer(kt.jsonapi.interfaces.IToOneRelationship)
-class ToOneRel(object):
+class ToOneRel:
 
     includable = True
 
@@ -140,7 +140,7 @@ class ToOneAddressableRel(ToOneRel):
 
 
 @zope.interface.implementer(kt.jsonapi.interfaces.IToManyRelationship)
-class ToManyRel(object):
+class ToManyRel:
 
     includable = True
 
@@ -199,7 +199,7 @@ class AppObject:
 
 
 @zope.interface.implementer(kt.jsonapi.interfaces.IResource)
-class AppAdapter(object):
+class AppAdapter:
 
     type = 'app-object'
     id = '86'
