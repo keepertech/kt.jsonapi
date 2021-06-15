@@ -594,9 +594,13 @@ def error_context():
 
 def __get_context(factory):
     try:
-        ctx = flask.g.__jsonapi_context
+        return flask.g.__jsonapi_context
     except AttributeError:
-        ctx = factory(flask.current_app._get_current_object(),
-                      flask.request._get_current_object())
-        flask.g.__jsonapi_context = ctx
+        # pass & fall through to avoid the confusing chained exception
+        # when things go wrong building the context based on the
+        # request.
+        pass
+    ctx = factory(flask.current_app._get_current_object(),
+                  flask.request._get_current_object())
+    flask.g.__jsonapi_context = ctx
     return ctx

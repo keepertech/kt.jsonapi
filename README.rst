@@ -14,6 +14,9 @@ The current implementation works with the Flask_ web framework.
 Release history
 ---------------
 
+#. Avoid unintended chained exceptions in ``context()`` and
+   ``error_context()`` high-level functions.
+
 
 1.4.0 (2021-05-24)
 ~~~~~~~~~~~~~~~~~~
