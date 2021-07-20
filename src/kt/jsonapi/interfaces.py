@@ -462,6 +462,15 @@ class IRelationshipBase(ILinksProvider, IMetadataProvider):
         readonly=True,
     )
 
+    source = zope.schema.Object(
+        title='Source',
+        description='Resource containing this relationship.',
+        schema=IResource,
+        # Can't require this, since we're adding this in a later version.
+        required=False,
+        readonly=True,
+    )
+
 
 class IToOneRelationship(IRelationshipBase):
 

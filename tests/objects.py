@@ -98,9 +98,11 @@ class ToOneRel:
 
     includable = True
 
-    def __init__(self, related, meta={}):
+    def __init__(self, related, meta={}, name=None, source=None):
         if related is not None:
             related = kt.jsonapi.interfaces.IResource(related)
+        self.name = name
+        self.source = source
         self._related = related
         self._meta = meta
 
@@ -121,8 +123,9 @@ class ToOneRel:
 
 class ToOneAddressableRel(ToOneRel):
 
-    def __init__(self, related, meta={}, link=None):
-        super(ToOneAddressableRel, self).__init__(related, meta)
+    def __init__(self, related, meta={}, link=None, name=None, source=None):
+        super(ToOneAddressableRel, self).__init__(related, meta,
+                                                  name=name, source=source)
         self._self_link = link
 
     def links(self):
@@ -145,7 +148,9 @@ class ToManyRel:
     includable = True
 
     def __init__(self, collection=None, meta=None,
-                 related_link=None, self_link=None):
+                 related_link=None, self_link=None, name=None, source=None):
+        self.name = name
+        self.source = source
         if collection is None:
             collection = SimpleCollection()
         self._collection = collection
