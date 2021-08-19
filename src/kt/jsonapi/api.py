@@ -418,6 +418,55 @@ class Context(_BaseContext):
                 'cannot specify sparse field sets or relationships'
                 ' to include for a relationship')
 
+    def related(self, relationship, headers=None):
+        """Generate response containing a relationship target as primary data.
+
+        Unlike the :meth:`resource` method, the response may include
+        ``null`` as the primary data if *relationship* is an empty
+        to-one relationship.
+
+        If *headers* is given and non-``None``, it must be be mapping of
+        additional headers that should be returned in the request.  If a
+        **Content-Type** header is provided, it will be used instead of
+        the default value for JSON:API responses.
+
+        The **links** member of the response payload will include
+        augmented **self** and pagination links as appropriate, as
+        provided by the
+        :meth:`~kt.jsonapi.interfaces.ILinksProvider.links` method for
+        the relationship, with query parameters copied from the request.
+        Pagination links will be augmented based on the query parameters
+        from the request with the incoming pagination parameters
+        stripped out.
+
+        """
+        rel = kt.jsonapi.interfaces.IToManyRelationship(relationship, None)
+        if rel is not None:
+            return self.collection(rel.collection(), headers=headers)
+
+        # Reject collection parameters; order should match that of
+        # _prepare_collection.
+        self._disallow_collection_params('resource')
+        rel = kt.jsonapi.interfaces.IToOneRelationship(relationship)
+        resource = rel.resource()
+        if resource is not None:
+            resource = kt.jsonapi.serializers.resource(self, resource)
+        body = dict(
+            data=resource,
+        )
+        name = getattr(rel, 'name', None)
+        source = getattr(rel, 'source', None)
+        if name and source is not None:
+            source = kt.jsonapi.interfaces.IResource(source)
+            source_links = source.links()
+            self_link = f'{source_links["self"].href}/{name}'
+            body['links'] = dict(self=self_link)
+            self._apply_query_params(body['links'])
+        if 'include' in self._query:
+            body['included'] = self.included
+
+        return self._response(body, headers=headers)
+
     def relationship(self, relationship, headers=None):
         """Generate response containing a relationship as primary data.
 

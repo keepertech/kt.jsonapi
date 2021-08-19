@@ -283,6 +283,106 @@ class ErrorResponseTestCase(tests.utils.JSONAPITestCase):
         self.assertEqual(err1['status'], '502')
 
 
+class RelatedResponseTestCase(tests.utils.JSONAPITestCase):
+
+    def setUp(self):
+        super(RelatedResponseTestCase, self).setUp()
+        self.headers = None
+        #
+        # Resource that references relation constructed in specific test.
+        #
+        self.source = tests.objects.SimpleResource()
+        self.source.relationships = lambda: dict(
+            myrel=self.relation,
+        )
+
+        class Render(flask_restful.Resource):
+            def get(inst):
+                self.context = kt.jsonapi.api.context()
+                return self.context.related(self.relation,
+                                            headers=self.headers)
+
+        self.api.add_resource(Render, '/')
+
+    def test_empty_to_one_relation(self):
+        self.relation = tests.objects.ToOneRel(None,
+                                               name='my-rel',
+                                               source=self.source)
+
+        resp = self.http_get('/', status=200)
+        self.assertEqual(resp.headers['Content-Type'],
+                         'application/vnd.api+json')
+        payload = resp.json
+        self.assertEqual(payload['data'], None)
+        self_link = f'/{self.source.type}/{self.source.id}/{self.relation.name}'
+        self.assertEqual(payload['links'], dict(self=self_link))
+
+    def test_non_empty_to_one_relation(self):
+        target = tests.objects.SimpleResource()
+        self.relation = tests.objects.ToOneRel(target,
+                                               name='my-rel',
+                                               source=self.source)
+
+        resp = self.http_get('/', status=200)
+        self.assertEqual(resp.headers['Content-Type'],
+                         'application/vnd.api+json')
+        payload = resp.json
+        self.assertEqual(payload['data']['id'], target.id)
+        self.assertEqual(payload['data']['type'], target.type)
+        self_link = f'/{self.source.type}/{self.source.id}/{self.relation.name}'
+        self.assertEqual(payload['links'], dict(self=self_link))
+
+    def test_non_empty_to_one_relation_with_include(self):
+        target = tests.objects.SimpleResource()
+        self.relation = tests.objects.ToOneRel(target,
+                                               name='my-rel',
+                                               source=self.source)
+        target.relationships = lambda: dict(
+            myrel=tests.objects.ToOneRel(
+                self.source, name='my-rel', source=target)
+        )
+
+        resp = self.http_get('/?include=myrel', status=200)
+        self.assertEqual(resp.headers['Content-Type'],
+                         'application/vnd.api+json')
+        payload = resp.json
+        self.assertEqual(payload['data']['id'], target.id)
+        self.assertEqual(payload['data']['type'], target.type)
+        self.assertEqual(payload['included'][0]['id'], self.source.id)
+        self.assertEqual(payload['included'][0]['type'], self.source.type)
+        self.assertEqual(
+            payload['included'][0]['relationships']['myrel']['data'],
+            dict(id=target.id, type=target.type)
+        )
+
+    def test_to_one_relation_with_filter(self):
+        self.relation = tests.objects.ToOneRel(None, source=self.source)
+
+        resp = self.http_get('/?filter=something', status=400)
+        self.assertEqual(resp.headers['Content-Type'], 'application/json')
+        message = resp.json['message']
+        self.assertIn('filter is not supported', message)
+        self.assertIn('for resource', message)
+
+    def test_to_one_relation_with_page(self):
+        self.relation = tests.objects.ToOneRel(None, source=self.source)
+
+        resp = self.http_get('/?page[limit]=10', status=400)
+        self.assertEqual(resp.headers['Content-Type'], 'application/json')
+        message = resp.json['message']
+        self.assertIn('page is not supported', message)
+        self.assertIn('for resource', message)
+
+    def test_to_one_relation_with_sort(self):
+        self.relation = tests.objects.ToOneRel(None, source=self.source)
+
+        resp = self.http_get('/?sort=something,-else', status=400)
+        self.assertEqual(resp.headers['Content-Type'], 'application/json')
+        message = resp.json['message']
+        self.assertIn('sort is not supported', message)
+        self.assertIn('for resource', message)
+
+
 class RelationshipResponseTestCase(tests.utils.JSONAPITestCase):
 
     def setUp(self):

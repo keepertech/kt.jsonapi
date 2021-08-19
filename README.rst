@@ -14,6 +14,12 @@ The current implementation works with the Flask_ web framework.
 Release history
 ---------------
 
+#. Add response method ``related()`` to generate a serialized response
+   for the target of a relationship.  This is useful with regard to
+   mutable to-one relationships because of the constraint that the
+   ``related`` `resource link not change because of changes to the
+   referenced resource`_.
+
 #. Avoid unintended chained exceptions in ``context()`` and
    ``error_context()`` high-level functions.
 
@@ -135,3 +141,6 @@ First release, internal to Keeper Technology, LLC.
 
 .. _JSON\:API:
    https://jsonapi.org/
+
+.. _resource link not change because of changes to the referenced resource:
+   https://jsonapi.org/format/#document-resource-object-related-resource-links
