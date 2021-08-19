@@ -131,7 +131,27 @@ class _BaseContext:
                 status = 400
         return self._response(body, headers=headers, status=status)
 
+    def jsonapi(self):
+        """Return a `JSON:API Object`_ that should be included in responses.
+
+        This may be invoked for either a successful or error response.
+
+        The default implementation returns an empty dictionary, which
+        will be dropped in serialization since it doesn't contribute any
+        information to the response.
+
+        .. _JSON:API Object:
+           https://jsonapi.org/format/#document-jsonapi-object
+        """
+        return {}
+
     def _response(self, body, headers=None, status=200):
+        jsonapi = self.jsonapi()
+        if jsonapi:
+            jsonapi = dict(jsonapi)
+            if 'meta' in jsonapi and not jsonapi['meta']:
+                del jsonapi['meta']
+            body['jsonapi'] = jsonapi
         data = json.dumps(body, cls=self._json_encoder).encode('utf-8')
         hdrs = flask.app.Headers()
         if headers is not None:
@@ -620,8 +640,12 @@ def context():
     A new context will be created if needed.  At most one context will
     be associated with each request.
 
+    If the ``'KT_JSONAPI_CONTEXT_REGULAR'`` setting is specified in
+    ``flask.current_app.config``, it should be a factory for a context
+    object.  This will normally be derived from :class:`Context`.
+
     """
-    return __get_context(factory=Context)
+    return __get_context(factory=Context, factory_name='REGULAR')
 
 
 def error_context():
@@ -635,13 +659,18 @@ def error_context():
     Only the :meth:`~kt.jsonapi.api.Context.error` method should be
     invoked on the returned context.
 
+    If the ``'KT_JSONAPI_CONTEXT_ERROR'`` setting is specified in
+    ``flask.current_app.config``, it should be a factory for a context
+    object.  This will normally be derived from :class:`ErrorContext`.
+
     """
-    ctx = __get_context(factory=ErrorContext)
-    ctx.__class__ = ErrorContext
+    ctx = __get_context(factory=ErrorContext, factory_name='ERROR')
+    if ctx.__class__ is Context:
+        ctx.__class__ = ErrorContext
     return ctx
 
 
-def __get_context(factory):
+def __get_context(factory, factory_name):
     try:
         return flask.g.__jsonapi_context
     except AttributeError:
@@ -649,6 +678,8 @@ def __get_context(factory):
         # when things go wrong building the context based on the
         # request.
         pass
+    config = flask.current_app.config
+    factory = config.get(f'KT_JSONAPI_CONTEXT_{factory_name}', factory)
     ctx = factory(flask.current_app._get_current_object(),
                   flask.request._get_current_object())
     flask.g.__jsonapi_context = ctx
