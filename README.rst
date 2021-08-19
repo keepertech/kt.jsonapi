@@ -20,6 +20,12 @@ Release history
    ``related`` `resource link not change because of changes to the
    referenced resource`_.
 
+#. Allow a Flask application to provide specialized context
+   implementations that can provide appropriate `JSON:API Object`_
+   values.
+
+#. Support serialization of a `JSON:API Object`_ with all responses.
+
 #. Avoid unintended chained exceptions in ``context()`` and
    ``error_context()`` high-level functions.
 
@@ -141,6 +147,9 @@ First release, internal to Keeper Technology, LLC.
 
 .. _JSON\:API:
    https://jsonapi.org/
+
+.. _JSON:API Object:
+   https://jsonapi.org/format/#document-jsonapi-object
 
 .. _resource link not change because of changes to the referenced resource:
    https://jsonapi.org/format/#document-resource-object-related-resource-links
