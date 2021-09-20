@@ -470,6 +470,9 @@ class Context(_BaseContext):
         rel = kt.jsonapi.interfaces.IToOneRelationship(relationship)
         resource = rel.resource()
         if resource is not None:
+            resource = kt.jsonapi.interfaces.IResource(resource)
+            key = resource.type, resource.id
+            self._included_idents.add(key)
             resource = kt.jsonapi.serializers.resource(self, resource)
         body = dict(
             data=resource,
@@ -571,6 +574,9 @@ class Context(_BaseContext):
 
         """
         self._disallow_collection_params('resource')
+        resource = kt.jsonapi.interfaces.IResource(resource)
+        key = resource.type, resource.id
+        self._included_idents.add(key)
         data = kt.jsonapi.serializers.resource(self, resource)
         link = self._resource_self_link(data)
         data = dict(data=data)
@@ -598,6 +604,9 @@ class Context(_BaseContext):
 
         """
         self._disallow_collection_params('resource')
+        resource = kt.jsonapi.interfaces.IResource(resource)
+        key = resource.type, resource.id
+        self._included_idents.add(key)
         data = kt.jsonapi.serializers.resource(self, resource)
         link = self._resource_self_link(data)
         data = dict(data=data)

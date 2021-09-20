@@ -305,23 +305,25 @@ class RelatedResponseTestCase(tests.utils.JSONAPITestCase):
         self.api.add_resource(Render, '/')
 
     def test_empty_to_one_relation(self):
-        self.relation = tests.objects.ToOneRel(None,
-                                               name='my-rel',
-                                               source=self.source)
+        relation = tests.objects.ToOneRel(None,
+                                          name='my-rel',
+                                          source=self.source)
+        self.relation = relation
 
         resp = self.http_get('/', status=200)
         self.assertEqual(resp.headers['Content-Type'],
                          'application/vnd.api+json')
         payload = resp.json
         self.assertEqual(payload['data'], None)
-        self_link = f'/{self.source.type}/{self.source.id}/{self.relation.name}'
+        self_link = f'/{self.source.type}/{self.source.id}/{relation.name}'
         self.assertEqual(payload['links'], dict(self=self_link))
 
     def test_non_empty_to_one_relation(self):
         target = tests.objects.SimpleResource()
-        self.relation = tests.objects.ToOneRel(target,
-                                               name='my-rel',
-                                               source=self.source)
+        relation = tests.objects.ToOneRel(target,
+                                          name='my-rel',
+                                          source=self.source)
+        self.relation = relation
 
         resp = self.http_get('/', status=200)
         self.assertEqual(resp.headers['Content-Type'],
@@ -329,7 +331,7 @@ class RelatedResponseTestCase(tests.utils.JSONAPITestCase):
         payload = resp.json
         self.assertEqual(payload['data']['id'], target.id)
         self.assertEqual(payload['data']['type'], target.type)
-        self_link = f'/{self.source.type}/{self.source.id}/{self.relation.name}'
+        self_link = f'/{self.source.type}/{self.source.id}/{relation.name}'
         self.assertEqual(payload['links'], dict(self=self_link))
 
     def test_non_empty_to_one_relation_with_include(self):
@@ -381,6 +383,22 @@ class RelatedResponseTestCase(tests.utils.JSONAPITestCase):
         message = resp.json['message']
         self.assertIn('sort is not supported', message)
         self.assertIn('for resource', message)
+
+    def test_resource_avoids_circular_inclusion(self):
+        # Resource with relationship to itself:
+        resource = tests.objects.SimpleResource(type='empty')
+        self.relation = tests.objects.ToOneRel(
+            resource, name='thing', source=resource)
+        resource._relationships['thing'] = self.relation
+
+        resp = self.http_get('/?include=thing')
+        self.assertEqual(resp.headers['Content-Type'],
+                         'application/vnd.api+json')
+        body = resp.get_json()
+        self.assertEqual(body['included'], [])
+        data = body['data']
+        self.assertEqual(data['relationships']['thing']['data'],
+                         dict(type=resource.type, id=resource.id))
 
 
 class RelationshipResponseTestCase(tests.utils.JSONAPITestCase):
@@ -1009,6 +1027,9 @@ class RelationshipResponseTestCase(tests.utils.JSONAPITestCase):
 
 class ResourceResponseTestCase(tests.utils.JSONAPITestCase):
 
+    http_status = 200
+    method = 'resource'
+
     def test_passing_headers_through(self):
         header_value = 'some-value; charset="us-ascii"'
         headers = {'X-Test-Header': header_value}
@@ -1076,11 +1097,13 @@ class ResourceResponseTestCase(tests.utils.JSONAPITestCase):
 
         class Render(flask_restful.Resource):
             def get(inst):
-                return kt.jsonapi.api.context().resource(resource)
+                context = kt.jsonapi.api.context()
+                method = getattr(context, self.method)
+                return method(resource)
 
         self.api.add_resource(Render, '/')
 
-        resp = self.http_get('/' + query_string)
+        resp = self.http_get('/' + query_string, status=self.http_status)
         data = resp.json
         self.assertEqual(resp.headers['Content-Type'],
                          'application/vnd.api+json')
@@ -1121,11 +1144,14 @@ class ResourceResponseTestCase(tests.utils.JSONAPITestCase):
 
         class Render(flask_restful.Resource):
             def get(inst):
-                return kt.jsonapi.api.context().resource(resource)
+                context = kt.jsonapi.api.context()
+                method = getattr(context, self.method)
+                return method(resource)
 
         self.api.add_resource(Render, '/')
 
-        resp = self.http_get('/?include=pecan,configuration,pie')
+        resp = self.http_get('/?include=pecan,configuration,pie',
+                             status=self.http_status)
         data = resp.json
         self.assertEqual(resp.headers['Content-Type'],
                          'application/vnd.api+json')
@@ -1167,12 +1193,15 @@ class ResourceResponseTestCase(tests.utils.JSONAPITestCase):
         )
 
         class Render(flask_restful.Resource):
-            def get(self):
-                return kt.jsonapi.api.context().resource(resource)
+            def get(inst):
+                context = kt.jsonapi.api.context()
+                method = getattr(context, self.method)
+                return method(resource)
 
         self.api.add_resource(Render, '/')
 
-        resp = self.http_get('/?beta=frob&alfa=24')
+        resp = self.http_get('/?beta=frob&alfa=24',
+                             status=self.http_status)
         body = resp.json
         self.assertEqual(
             body['links'],
@@ -1195,11 +1224,14 @@ class ResourceResponseTestCase(tests.utils.JSONAPITestCase):
 
         class Render(flask_restful.Resource):
             def get(inst):
-                return kt.jsonapi.api.context().resource(resource)
+                context = kt.jsonapi.api.context()
+                method = getattr(context, self.method)
+                return method(resource)
 
         self.api.add_resource(Render, '/')
 
-        resp = self.http_get('/?fields[%s]=' % resource.type)
+        resp = self.http_get('/?fields[%s]=' % resource.type,
+                             status=self.http_status)
         data = resp.json
         self.assertEqual(resp.headers['Content-Type'],
                          'application/vnd.api+json')
@@ -1230,12 +1262,16 @@ class ResourceResponseTestCase(tests.utils.JSONAPITestCase):
 
         class Render(flask_restful.Resource):
             def get(inst):
-                return kt.jsonapi.api.context().resource(resource)
+                context = kt.jsonapi.api.context()
+                method = getattr(context, self.method)
+                return method(resource)
 
         self.api.add_resource(Render, '/')
 
         resp = self.http_get(
-            f'/?fields[{resource.type}]=string-attr&include=configuration')
+            f'/?fields[{resource.type}]=string-attr&include=configuration',
+            status=self.http_status,
+        )
         data = resp.json
         self.assertEqual(resp.headers['Content-Type'],
                          'application/vnd.api+json')
@@ -1258,10 +1294,36 @@ class ResourceResponseTestCase(tests.utils.JSONAPITestCase):
         self.assertEqual(data['data'], expected_resource)
         self.assertEqual(data['included'], [included_resource])
 
+    def test_resource_avoids_circular_inclusion(self):
+        # Resource with relationship to itself:
+        resource = tests.objects.SimpleResource(type='empty')
+        relation = tests.objects.ToOneRel(
+            resource, name='thing', source=resource)
+        resource._relationships['thing'] = relation
+
+        class Render(flask_restful.Resource):
+            def get(inst):
+                context = kt.jsonapi.api.context()
+                method = getattr(context, self.method)
+                return method(resource)
+
+        self.api.add_resource(Render, '/')
+
+        resp = self.http_get(
+            f'/?fields[{resource.type}]=&include=thing',
+            status=self.http_status,
+        )
+        self.assertEqual(resp.headers['Content-Type'],
+                         'application/vnd.api+json')
+        body = resp.get_json()
+        self.assertEqual(body['included'], [])
+
 
 class CreatedResponseTestCase(ResourceResponseTestCase):
 
+    http_status = 201
     location = 'http://example.test/some-thing/42'
+    method = 'created'
 
     def prepare_passing_headers_through(self, headers):
         resource = tests.objects.SimpleResource(attributes=dict(simple=True))

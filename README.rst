@@ -14,6 +14,15 @@ The current implementation works with the Flask_ web framework.
 Release history
 ---------------
 
+#. Bug fix: The context methods ``created()`` and ``resource()`` could
+   serialize the primary data into ``included`` as well as ``data`` if a
+   circular relationship including the primary data passed into the call
+   was included.
+   https://kt-git.keepertech.com/DevTools/kt.jsonapi/-/issues/14
+
+#. Fix tests inherited from the ``resource`` tests to actually invoked
+   the ``created`` method when run as part of the tests for ``created``.
+
 #. Add response method ``related()`` to generate a serialized response
    for the target of a relationship.  This is useful with regard to
    mutable to-one relationships because of the constraint that the
