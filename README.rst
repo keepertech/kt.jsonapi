@@ -14,6 +14,10 @@ The current implementation works with the Flask_ web framework.
 Release history
 ---------------
 
+
+1.5.0 (2021-09-20)
+~~~~~~~~~~~~~~~~~~
+
 #. Bug fix: The context methods ``created()`` and ``resource()`` could
    serialize the primary data into ``included`` as well as ``data`` if a
    circular relationship including the primary data passed into the call
