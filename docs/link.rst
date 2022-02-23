@@ -1,4 +1,4 @@
-:mod:`link` --- JSON:API link object
-====================================
+:mod:`link` --- Link object
+===========================
 
 .. automodule:: kt.jsonapi.link

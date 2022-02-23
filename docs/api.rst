@@ -1,5 +1,5 @@
-:mod:`api` --- High-level API for response generation
-=====================================================
+:mod:`api` --- Response generation
+==================================
 
 .. automodule:: kt.jsonapi.api
    :members:

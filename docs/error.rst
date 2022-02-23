@@ -1,5 +1,5 @@
-:mod:`error` --- JSON:API error objects
-=======================================
+:mod:`error` --- Error objects
+==============================
 
 .. module:: kt.jsonapi.error
    :synopsis: Classes representing JSON:API errors

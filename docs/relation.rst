@@ -1,4 +1,4 @@
-:mod:`relation` --- JSON:API relationship objects
-=================================================
+:mod:`relation` --- Relationship objects
+========================================
 
 .. automodule:: kt.jsonapi.relation
