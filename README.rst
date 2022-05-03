@@ -14,6 +14,8 @@ The current implementation works with the Flask_ web framework.
 Release history
 ---------------
 
+#. First public release of ``kt.jsonapi``.
+
 #. Added support for Python 3.10, 3.11.
 
 
