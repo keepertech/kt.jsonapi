@@ -24,7 +24,6 @@ Release history
    serialize the primary data into ``included`` as well as ``data`` if a
    circular relationship including the primary data passed into the call
    was included.
-   https://kt-git.keepertech.com/DevTools/kt.jsonapi/-/issues/14
 
 #. Fix tests inherited from the ``resource`` tests to actually invoked
    the ``created`` method when run as part of the tests for ``created``.
@@ -55,12 +54,10 @@ Release history
    the relationship interfaces with the ``name`` attribute, which
    remains optional; if not present, ``include`` and ``fields`` continue
    to generate an error.
-   https://kt-git.keepertech.com/DevTools/kt.jsonapi/-/issues/12
 
 #. Include content from relationships which were identified in the
    ``include`` query parameter even if the relationships themselves were
    excluded by a ``fields[...]`` parameter.
-   https://kt-git.keepertech.com/DevTools/kt.jsonapi/-/issues/13
 
 #. Update to modern PyPA tooling recommendations.
 
@@ -74,7 +71,6 @@ Release history
    returned automatically from response methods on the context, since
    switching from a planned response to an error response should invoke
    content negotiation; this is left to integration layers.
-   https://kt-git.keepertech.com/DevTools/kt.jsonapi/-/issues/3
 
 #. Support relationships that cannot be included in composite documents
    using the ``include`` query string parameter.  A request for
@@ -83,7 +79,6 @@ Release history
    raised.  Otherwise, the relationship will be serialized without a
    ``data`` element; only ``links`` and ``meta`` will be included, as
    appropriate.
-   https://kt-git.keepertech.com/DevTools/kt.jsonapi/-/issues/6
 
 
 1.2.1 (2021-01-12)
@@ -91,7 +86,6 @@ Release history
 
 #. Support pagination links of ``None`` for collections and to-many
    relationships.
-   https://kt-git.keepertech.com/DevTools/kt.jsonapi/issues/11
 
 #. Treat an empty ``include`` query parameter as an empty list of
    relationship paths.  This was previously silently treated as an empty
@@ -106,11 +100,9 @@ Release history
    This can be a significant change for applications that deal with
    query parameters themselves.
    https://github.com/json-api/json-api/issues/1502
-   https://kt-git.keepertech.com/DevTools/kt.jsonapi/issues/8
 
 #. Fix generation of links for a relationship to correctly deal with
    collection-oriented query parameters (``filter``, ``page``, ``sort``).
-   https://kt-git.keepertech.com/DevTools/kt.jsonapi/issues/10
 
 #. Validate relationship paths passed to the ``include`` query parameter.
 
@@ -140,7 +132,6 @@ Release history
 
 #. Support explicit request to receive no fields by resource type.  This
    reflects a recent clarification added to the JSON:API specification.
-   https://kt-git.keepertech.com/DevTools/kt.jsonapi/issues/7
 
 #. Provide ``included`` in response if request includes an ``include``
    query parameter, even if the value is an empty list.  Improves
@@ -148,7 +139,6 @@ Release history
    https://github.com/json-api/json-api/issues/1230
 
 #. Adapt source object to IResource in relationship implementations.
-   https://kt-git.keepertech.com/DevTools/kt.jsonapi/issues/9
 
 
 1.0.0 (2020-07-09)
