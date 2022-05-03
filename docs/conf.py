@@ -8,6 +8,7 @@
 
 import os
 
+
 # -- Project information -----------------------------------------------------
 
 project = 'kt.jsonapi'
@@ -72,8 +73,7 @@ html_theme = 'sphinx_rtd_theme'
 # documentation.
 #
 html_theme_options = {
-    # 'issues_url': ('https://kt-git.keepertech.com/'
-    #                'DevTools/kt.jsonapi/issues/'),
+    # 'issues_url': 'https://github.com/keepertech/kt.jsonapi/issues/',
 }
 
 # Add any paths that contain custom static files (such as style sheets) here,
