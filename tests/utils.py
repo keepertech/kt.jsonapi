@@ -1,10 +1,3 @@
-# (c) 2020.  Keeper Technology LLC.  All Rights Reserved.
-# Use is subject to license.  Reproduction and distribution is strictly
-# prohibited.
-#
-# Subject to the following third party software licenses and terms and
-# conditions (including open source):  www.keepertech.com/thirdpartylicenses
-
 """\
 Tests support for kt.jsonapi tests.
 
@@ -46,5 +39,6 @@ class JSONAPITestCase(unittest.TestCase):
         if status:
             self.assertEqual(
                 response.status_code, status,
-                f'POST {path} status {response.status_code}, expected {status}')
+                f'POST {path} status {response.status_code}, expected {status}'
+            )
         return response

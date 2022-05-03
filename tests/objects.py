@@ -1,10 +1,3 @@
-# (c) 2020 - 2021.  Keeper Technology LLC.  All Rights Reserved.
-# Use is subject to license.  Reproduction and distribution is strictly
-# prohibited.
-#
-# Subject to the following third party software licenses and terms and
-# conditions (including open source):  www.keepertech.com/thirdpartylicenses
-
 """\
 Example application objects and adapters for tests.
 

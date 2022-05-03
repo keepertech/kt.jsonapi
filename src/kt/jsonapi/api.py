@@ -1,17 +1,10 @@
-# (c) 2020 - 2021.  Keeper Technology LLC.  All Rights Reserved.
-# Use is subject to license.  Reproduction and distribution is strictly
-# prohibited.
-#
-# Subject to the following third party software licenses and terms and
-# conditions (including open source):  www.keepertech.com/thirdpartylicenses
-#
-# All the ValueError exceptions raised here should be something more
-# specific that better indicates the source of the problem.
-
 """\
 Top-level API to construct JSON:API responses from application objects.
 
 """
+
+# All the ValueError exceptions raised here should be something more
+# specific that better indicates the source of the problem.
 
 import json
 import urllib.parse
