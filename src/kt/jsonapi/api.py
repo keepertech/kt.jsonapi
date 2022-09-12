@@ -82,6 +82,16 @@ class QueryParameter:
 
 class _BaseContext:
 
+    # Flask 2.2 changes how JSON encoding is configured;
+    # app.json_encoder is deprecated and replaced with
+    # app.json_provider_class and app.json, which have APIs similar to
+    # the json module, rather than the encoder class.  We try to
+    # tolerate either approach, using what's preferred by the Flask
+    # version we're using.
+    #
+    _json_encoder = None
+    _json_provider = None
+
     def __init__(self, app, request):
         """Initialize information needed from the request.
 
@@ -89,7 +99,10 @@ class _BaseContext:
         of relying on being able to get it later.
 
         """
-        self._json_encoder = app.json_encoder
+        try:
+            self._json_provider = app.json
+        except AttributeError:
+            self._json_encoder = app.json_encoder
 
     def error(self, error, headers=None):
         """Generate error response from exception.
@@ -145,7 +158,11 @@ class _BaseContext:
             if 'meta' in jsonapi and not jsonapi['meta']:
                 del jsonapi['meta']
             body['jsonapi'] = jsonapi
-        data = json.dumps(body, cls=self._json_encoder).encode('utf-8')
+        if self._json_provider is not None:
+            data = self._json_provider.dumps(body)
+        else:
+            data = json.dumps(body, cls=self._json_encoder)
+        data = data.encode('utf-8')
         hdrs = flask.app.Headers()
         if headers is not None:
             hdrs.extend(headers)

@@ -15,6 +15,17 @@ Release history
 ---------------
 
 
+1.7.0 (unreleased)
+~~~~~~~~~~~~~~~~~~
+
+#. Drop support for Python 3.6.
+
+#. Update to support Flask 2.2 and newer without deprecation warnings.
+   The changes to use ``app.json`` or ``app.json_provider_class``
+   instead of ``app.json_encoder`` affect many applications that drive
+   their own response generation.
+
+
 1.6.1 (2022-05-12)
 ~~~~~~~~~~~~~~~~~~
 
